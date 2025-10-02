@@ -1,0 +1,158 @@
+
+networks:
+  proxy:
+    driver: bridge
+  internal:
+    driver: bridge
+
+volumes:
+  traefik_letsencrypt:
+  pg_data:
+
+services:
+  sighdb:
+    image: postgis/postgis:16-3.4
+    container_name: postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${PG_DB}
+      POSTGRES_USER: ${PG_USER}
+      POSTGRES_PASSWORD: ${PG_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL","pg_isready -U ${PG_USER} -d ${PG_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+      - pg_data:/var/lib/postgresql/data
+      - ./db/init-keycloak.sql:/docker-entrypoint-initdb.d/10-init-keycloak.sql:ro
+    networks:
+      - internal
+
+  pgbouncer:
+    image: bitnami/pgbouncer:1.23.1
+    container_name: pgbouncer
+    restart: unless-stopped
+    environment:
+      PGBOUNCER_DATABASE: ${PG_DB}
+      PGBOUNCER_HOST: postgres
+      PGBOUNCER_PORT: 5432
+      PGBOUNCER_AUTH_TYPE: md5
+      PGBOUNCER_MAX_CLIENT_CONN: "5000"
+      PGBOUNCER_DEFAULT_POOL_SIZE: "50"
+      PGBOUNCER_POOL_MODE: transaction
+      PGBOUNCER_IGNORE_STARTUP_PARAMETERS: "extra_float_digits,search_path"
+      POSTGRESQL_USERNAME: ${PG_USER}
+      POSTGRESQL_PASSWORD: ${PG_PASSWORD}
+    depends_on:
+      - postgres
+    networks:
+      - internal
+    ports:
+      # expose only if you need external psql access through the pool (dev)
+      - "6432:6432"
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    restart: unless-stopped
+    command: ["redis-server","--appendonly","yes"]
+    networks:
+      - internal
+    # ports: # inutile en prod derrière le réseau internal
+    #   - "6379:6379"
+
+  sighweb:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: django
+    restart: unless-stopped
+    env_file:
+      - ./.env
+    environment:
+      DJANGO_SETTINGS_MODULE: sigh.settings.prod
+      # Si vous n'utilisez pas DATABASE_URL dans .env, vous pouvez forcer ici :
+      # DATABASE_URL: postgresql://${PG_USER}:${PG_PASSWORD}@pgbouncer:6432/${PG_DB}
+    depends_on:
+      - pgbouncer
+      - redis
+    expose:
+      - "8000"
+    networks:
+      - internal
+      - proxy
+    labels:
+      - "traefik.enable=true"
+      # Route HTTPS pour l'API
+      - "traefik.http.routers.api.rule=Host(`${API_HOST}`)"
+      - "traefik.http.routers.api.entrypoints=websecure"
+      - "traefik.http.routers.api.tls.certresolver=lets"
+      - "traefik.http.services.api.loadbalancer.server.port=8000"
+      # (Option) middlewares de sécurité
+      - "traefik.http.middlewares.sec-headers.headers.stsSeconds=31536000"
+      - "traefik.http.middlewares.sec-headers.headers.stsIncludeSubdomains=true"
+      - "traefik.http.middlewares.sec-headers.headers.forceSTSHeader=true"
+      - "traefik.http.routers.api.middlewares=sec-headers"
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0
+    container_name: keycloak
+    restart: unless-stopped
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/${KC_DB_NAME}
+      KC_DB_USERNAME: ${KC_DB_USER}
+      KC_DB_PASSWORD: ${KC_DB_PASSWORD}
+
+      # Admin Keycloak
+      KEYCLOAK_ADMIN: ${KC_ADMIN}
+      KEYCLOAK_ADMIN_PASSWORD: ${KC_ADMIN_PASSWORD}
+
+      # Derrière Traefik
+      KC_PROXY: edge
+      KC_HOSTNAME: ${SSO_HOST}
+      KC_HTTP_ENABLED: "true"
+      KC_HEALTH_ENABLED: "true"
+      KC_METRICS_ENABLED: "true"
+    command: [ "start" ]  # (prod) pas "start-dev"
+    depends_on:
+      - sighdb
+    networks:
+      - internal
+      - proxy
+    expose:
+      - "8080"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.sso.rule=Host(`${SSO_HOST}`)"
+      - "traefik.http.routers.sso.entrypoints=websecure"
+      - "traefik.http.routers.sso.tls.certresolver=lets"
+      - "traefik.http.services.sso.loadbalancer.server.port=8080"
+
+  # (Option) frontends React servis par nginx — décommentez si besoin
+  # staff_frontend:
+  #   image: nginx:1.27-alpine
+  #   restart: unless-stopped
+  #   networks: [proxy]
+  #   volumes:
+  #     - ./staff-frontend/dist:/usr/share/nginx/html:ro
+  #   labels:
+  #     - "traefik.enable=true"
+  #     - "traefik.http.routers.staff.rule=Host(`${STAFF_HOST}`)"
+  #     - "traefik.http.routers.staff.entrypoints=websecure"
+  #     - "traefik.http.routers.staff.tls.certresolver=lets"
+  #     - "traefik.http.services.staff.loadbalancer.server.port=80"
+
+  # patient_frontend:
+  #   image: nginx:1.27-alpine
+  #   restart: unless-stopped
+  #   networks: [proxy]
+  #   volumes:
+  #     - ./patient-frontend/dist:/usr/share/nginx/html:ro
+  #   labels:
+  #     - "traefik.enable=true"
+  #     - "traefik.http.routers.patient.rule=Host(`${PATIENT_HOST}`)"
+  #     - "traefik.http.routers.patient.entrypoints=websecure"
+  #     - "traefik.http.routers.patient.tls.certresolver=lets"
+  #     - "traefik.http.services.patient.loadbalancer.server.port=80"
