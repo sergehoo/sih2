@@ -65,7 +65,9 @@ services:
 
   sighweb:
     build:
+      context: .
       dockerfile: Dockerfile
+
     restart: unless-stopped
     env_file:
       - ./.env
