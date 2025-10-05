@@ -1,0 +1,715 @@
+{% load rbac %}
+
+
+
+<aside :class="[
+    'sidebar-transition bg-white dark:bg-gray-800 shadow-xl flex flex-col overflow-hidden',
+    sidebarCollapsed ? 'w-20' : 'w-72']" aria-label="Navigation latérale">
+  <!-- En-tête / Brand -->
+  <div class="px-4 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between bg-gradient-to-r from-primary-600 to-primary-700">
+    <div class="flex items-center">
+      <div class="w-10 h-10 grid place-items-center rounded-xl bg-white/10 text-white shadow-soft">
+        <i class="fa-solid fa-hospital"></i>
+      </div>
+      <div x-show="!sidebarCollapsed" class="ml-3 overflow-hidden">
+        <h1 class="text-lg font-bold leading-tight text-white">SIGHo</h1>
+        <p class="text-xs text-primary-100">
+          {{ facility.name|default:"—" }}
+        </p>
+      </div>
+    </div>
+    <button @click="toggleSidebar()" class="p-2 rounded-lg text-white/90 hover:bg-white/10" aria-label="Basculer la sidebar">
+      <i :class="sidebarCollapsed ? 'fa-solid fa-chevron-right' : 'fa-solid fa-chevron-left'"></i>
+    </button>
+  </div>
+
+  <!-- Corps -->
+  <nav class="flex-1 overflow-y-auto custom-scrollbar bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-gray-800">
+
+    <!-- Carte User -->
+    <div x-show="!sidebarCollapsed" class="px-4 pt-4">
+      <div class="bg-white dark:bg-gray-900 rounded-xl shadow-sm p-4 border-l-4 border-hospital-blue">
+        <div class="flex items-center">
+          <div class="bg-hospital-blue/10 text-hospital-blue rounded-full w-12 h-12 grid place-items-center mr-3">
+            <i class="fas fa-user-md text-lg"></i>
+          </div>
+          <div class="min-w-0">
+            <p class="text-sm font-medium text-gray-900 dark:text-white truncate">
+              {{ profile.username|default:request.user.get_username }}
+            </p>
+            <p class="text-xs text-gray-500 dark:text-gray-400 truncate">
+              {% if roles|has_role:"ROLE_DIRECTEUR_ETABLISSEMENT" %}
+                Directeur d’établissement
+              {% elif roles|has_role:"ROLE_MEDECIN" %}
+                Médecin{% if depts %} — {{ depts.0|title }}{% endif %}
+              {% elif roles|has_role:"ROLE_INFIRMIER" %}
+                Infirmier(ère)
+              {% else %}
+                Utilisateur
+              {% endif %}
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Menu par sections -->
+    <ul class="px-2 py-4 space-y-6">
+      <!-- Générale -->
+      <li>
+        <h6 x-show="!sidebarCollapsed" class="px-3 mb-2 text-[11px] font-semibold uppercase tracking-wider text-hospital-blue dark:text-primary-200">Générale</h6>
+        <ul class="space-y-1">
+          <li class="relative">
+            <a href="# url 'dashboard' %}" class="group relative flex items-center rounded-xl px-3 py-2 transition-all hover:bg-primary-50 dark:hover:bg-primary-900/30 hover:shadow-sm border-l-4 border-primary-500 bg-primary-50 dark:bg-primary-900/40 text-primary-700 dark:text-primary-200">
+              <span class="w-8 h-8 rounded-lg grid place-items-center shrink-0 bg-gray-100 text-gray-600 group-hover:bg-primary-100 group-hover:text-primary-700 dark:bg-gray-700 dark:text-gray-300 dark:group-hover:bg-primary-800 dark:group-hover:text-primary-200">
+                <i class="fa-solid fa-gauge-high"></i>
+              </span>
+              <span x-show="!sidebarCollapsed" class="ml-3 font-medium truncate">Tableau de bord</span>
+              <div x-show="!sidebarCollapsed" class="absolute right-3 top-1/2 -translate-y-1/2">
+                <span class="text-xs font-medium px-2 py-0.5 rounded-full bg-hospital-blue/10 text-hospital-blue">
+                  {{ counters.dashboard|default:0 }}
+                </span>
+              </div>
+            </a>
+          </li>
+          <li class="relative">
+            <a href="# url 'search' %}" class="group relative flex items-center rounded-xl px-3 py-2 transition-all hover:bg-primary-50 dark:hover:bg-primary-900/30 hover:shadow-sm border-l-4 border-transparent text-gray-700 dark:text-gray-300">
+              <span class="w-8 h-8 rounded-lg grid place-items-center shrink-0 bg-gray-100 text-gray-600 group-hover:bg-primary-100 group-hover:text-primary-700 dark:bg-gray-700 dark:text-gray-300 dark:group-hover:bg-primary-800 dark:group-hover:text-primary-200">
+                <i class="fa-solid fa-magnifying-glass"></i>
+              </span>
+              <span x-show="!sidebarCollapsed" class="ml-3 font-medium truncate">Recherche globale</span>
+            </a>
+          </li>
+        </ul>
+      </li>
+
+      <!-- Spécialités (règles d’affichage par rôle) -->
+      <li>
+        <h6 x-show="!sidebarCollapsed" class="px-3 mb-2 text-[11px] font-semibold uppercase tracking-wider text-hospital-blue dark:text-primary-200">
+          Spécialités (CI — Ordre des Médecins)
+        </h6>
+        <ul class="space-y-1">
+          <li class="relative">
+            <button type="button" @click="toggleSub('specialites-ci')" class="group w-full relative flex items-center justify-between rounded-xl px-3 py-2 transition-all hover:bg-primary-50 dark:hover:bg-primary-900/30 hover:shadow-sm border-l-4 border-primary-500 text-primary-700 dark:text-primary-200">
+              <div class="flex items-center min-w-0">
+                <span class="w-8 h-8 rounded-lg grid place-items-center shrink-0 bg-rose-100 text-rose-600 group-hover:bg-rose-200 group-hover:text-rose-700 dark:bg-rose-900/30 dark:text-rose-300">
+                  <i class="fa-solid fa-briefcase-medical"></i>
+                </span>
+                <span x-show="!sidebarCollapsed" class="ml-3 font-medium truncate">Spécialités médicales</span>
+              </div>
+              <em x-show="!sidebarCollapsed" class="fa-solid text-xs transition-transform fa-chevron-down text-gray-400 group-hover:text-primary-600"></em>
+            </button>
+
+            <ul x-show="isOpen('specialites-ci') && !sidebarCollapsed" class="mt-1 ml-4 pl-2 border-l-2 border-gray-200 dark:border-gray-700 space-y-1">
+              {# 1) Directeur : toutes les spécialités #}
+              {% if roles|has_role:"ROLE_DIRECTEUR_ETABLISSEMENT" %}
+                {% for s in specialties %}
+                  <li>
+                    <a href="# url 'specialty:detail' s.code %}" class="group flex items-center px-3 py-2 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-all">
+                      <i class="fa-solid fa-circle-dot mr-3 text-primary-600 dark:text-primary-300"></i>
+                      <span class="text-sm text-gray-700 dark:text-gray-300 group-hover:text-primary-700 dark:group-hover:text-primary-200">
+                        {{ s.name }}
+                      </span>
+                    </a>
+                  </li>
+                {% empty %}
+                  <li class="px-3 py-2 text-sm text-gray-500">Aucune spécialité configurée.</li>
+                {% endfor %}
+
+              {# 2) Médecin : seulement sa/leurs spécialités (via depts) #}
+              {% elif roles|has_role:"ROLE_MEDECIN" and depts %}
+                {% for s in specialties %}
+                  {% if depts|in_dept:s.code %}
+                    <li>
+                      <a href="# url 'specialty:detail' s.code %}" class="group flex items-center px-3 py-2 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-all">
+                        <i class="fa-solid fa-circle-dot mr-3 text-primary-600 dark:text-primary-300"></i>
+                        <span class="text-sm text-gray-700 dark:text-gray-300 group-hover:text-primary-700 dark:group-hover:text-primary-200">
+                          {{ s.name }}
+                        </span>
+                      </a>
+                    </li>
+                  {% endif %}
+                {% empty %}
+                  <li class="px-3 py-2 text-sm text-gray-500">Aucune spécialité configurée.</li>
+                {% endfor %}
+
+              {# 3) Autres rôles : rien / message #}
+              {% else %}
+                <li class="px-3 py-2 text-sm text-gray-500">Aucune spécialité disponible pour votre rôle.</li>
+              {% endif %}
+            </ul>
+          </li>
+        </ul>
+      </li>
+    </ul>
+
+    <!-- Actions rapides pied -->
+    <div x-show="!sidebarCollapsed" class="mt-4 px-4 pb-4">
+      <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+        <h6 class="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2">Actions rapides</h6>
+        <div class="flex gap-2">
+          <button class="flex-1 bg-primary-50 text-primary-700 text-xs font-medium py-2 px-3 rounded-lg text-center hover:bg-primary-100 dark:bg-primary-900/30 dark:text-primary-200" @click="notify('success','Nouveau','Ouverture d\'un nouveau dossier')">
+            <i class="fas fa-plus mr-1"></i> Nouveau
+          </button>
+          <button class="flex-1 bg-green-50 text-green-700 text-xs font-medium py-2 px-3 rounded-lg text-center hover:bg-green-100 dark:bg-green-900/30 dark:text-green-200" @click="notify('info','Recherche','Ouverture de la recherche globale')">
+            <i class="fas fa-search mr-1"></i> Rechercher
+          </button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Bloc utilisateur pied -->
+  <div class="p-4 border-t border-gray-200 dark:border-gray-700">
+    <div class="flex items-center">
+      <img src="{{ profile.avatar_url|default:'https://randomuser.me/api/portraits/lego/1.jpg' }}" alt="Utilisateur" class="w-10 h-10 rounded-full object-cover"/>
+      <div x-show="!sidebarCollapsed" class="ml-3">
+        <p class="font-medium">{{ profile.username|default:request.user.get_username }}</p>
+        <p class="text-sm text-gray-500 dark:text-gray-400">
+          {{ facility.name|default:"Sans établissement" }}
+        </p>
+      </div>
+    </div>
+  </div>
+</aside>
+{#<aside#}
+{#    :class="[#}
+{#      'sidebar-transition bg-white dark:bg-gray-800 shadow-xl flex flex-col overflow-hidden',#}
+{#      sidebarCollapsed ? 'w-20' : 'w-72'#}
+{#    ]"#}
+{#    aria-label="Navigation latérale"#}
+{#  >#}
+{#    <!-- En-tête / Brand -->#}
+{#    <div class="px-4 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between bg-gradient-to-r from-primary-600 to-primary-700">#}
+{#      <div class="flex items-center">#}
+{#        <div class="w-10 h-10 grid place-items-center rounded-xl bg-white/10 text-white shadow-soft">#}
+{#          <i class="fa-solid fa-hospital"></i>#}
+{#        </div>#}
+{#        <div x-show="!sidebarCollapsed" class="ml-3 overflow-hidden">#}
+{#          <h1 class="text-lg font-bold leading-tight text-white">SIGHo</h1>#}
+{#          <p class="text-xs text-primary-100">CHU COCODY</p>#}
+{#        </div>#}
+{#      </div>#}
+{#      <button#}
+{#        @click="toggleSidebar()"#}
+{#        class="p-2 rounded-lg text-white/90 hover:bg-white/10"#}
+{#        aria-label="Basculer la sidebar"#}
+{#      >#}
+{#        <i :class="sidebarCollapsed ? 'fa-solid fa-chevron-right' : 'fa-solid fa-chevron-left'"></i>#}
+{#      </button>#}
+{#    </div>#}
+{##}
+{#    <!-- Corps -->#}
+{#    <nav class="flex-1 overflow-y-auto custom-scrollbar bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-gray-800">#}
+{#      <!-- Carte "User Quick Info" -->#}
+{#      <div x-show="!sidebarCollapsed" class="px-4 pt-4">#}
+{#        <div class="bg-white dark:bg-gray-900 rounded-xl shadow-sm p-4 border-l-4 border-hospital-blue">#}
+{#          <div class="flex items-center">#}
+{#            <div class="bg-hospital-blue/10 text-hospital-blue rounded-full w-12 h-12 grid place-items-center mr-3">#}
+{#              <i class="fas fa-user-md text-lg"></i>#}
+{#            </div>#}
+{#            <div class="min-w-0">#}
+{#              <p class="text-sm font-medium text-gray-900 dark:text-white truncate">#}
+{#                Dr. Sophie Martin (Cardiologue)#}
+{#              </p>#}
+{#              <p class="text-xs text-gray-500 dark:text-gray-400 truncate">#}
+{#                Cardiologue#}
+{#              </p>#}
+{#            </div>#}
+{#          </div>#}
+{#        </div>#}
+{#      </div>#}
+{##}
+{#      <!-- Menu par sections -->#}
+{#      <ul class="px-2 py-4 space-y-6">#}
+{#        <!-- Section Générale -->#}
+{#        <li>#}
+{#          <h6 x-show="!sidebarCollapsed" class="px-3 mb-2 text-[11px] font-semibold uppercase tracking-wider text-hospital-blue dark:text-primary-200">#}
+{#            Générale#}
+{#          </h6>#}
+{#          <ul class="space-y-1">#}
+{#            <li class="relative">#}
+{#              <a href="#" class="group relative flex items-center rounded-xl px-3 py-2 transition-all hover:bg-primary-50 dark:hover:bg-primary-900/30 hover:shadow-sm border-l-4 border-primary-500 bg-primary-50 dark:bg-primary-900/40 text-primary-700 dark:text-primary-200">#}
+{#                <span class="w-8 h-8 rounded-lg grid place-items-center shrink-0 bg-gray-100 text-gray-600 group-hover:bg-primary-100 group-hover:text-primary-700 dark:bg-gray-700 dark:text-gray-300 dark:group-hover:bg-primary-800 dark:group-hover:text-primary-200">#}
+{#                  <i class="fa-solid fa-gauge-high"></i>#}
+{#                </span>#}
+{#                <span x-show="!sidebarCollapsed" class="ml-3 font-medium truncate">Tableau de bord</span>#}
+{#                <div x-show="!sidebarCollapsed" class="absolute right-3 top-1/2 -translate-y-1/2">#}
+{#                  <span class="text-xs font-medium px-2 py-0.5 rounded-full bg-hospital-blue/10 text-hospital-blue">42</span>#}
+{#                </div>#}
+{#              </a>#}
+{#            </li>#}
+{#            <li class="relative">#}
+{#              <a href="#" class="group relative flex items-center rounded-xl px-3 py-2 transition-all hover:bg-primary-50 dark:hover:bg-primary-900/30 hover:shadow-sm border-l-4 border-transparent text-gray-700 dark:text-gray-300">#}
+{#                <span class="w-8 h-8 rounded-lg grid place-items-center shrink-0 bg-gray-100 text-gray-600 group-hover:bg-primary-100 group-hover:text-primary-700 dark:bg-gray-700 dark:text-gray-300 dark:group-hover:bg-primary-800 dark:group-hover:text-primary-200">#}
+{#                  <i class="fa-solid fa-magnifying-glass"></i>#}
+{#                </span>#}
+{#                <span x-show="!sidebarCollapsed" class="ml-3 font-medium truncate">Recherche globale</span>#}
+{#              </a>#}
+{#            </li>#}
+{#          </ul>#}
+{#        </li>#}
+{##}
+{#        <!-- Section Accueil -->#}
+{#        <li>#}
+{#          <h6 x-show="!sidebarCollapsed" class="px-3 mb-2 text-[11px] font-semibold uppercase tracking-wider text-hospital-blue dark:text-primary-200">#}
+{#            Accueil#}
+{#          </h6>#}
+{#          <ul class="space-y-1">#}
+{#            <li class="relative">#}
+{#              <a href="#" class="group relative flex items-center rounded-xl px-3 py-2 transition-all hover:bg-primary-50 dark:hover:bg-primary-900/30 hover:shadow-sm border-l-4 border-transparent text-gray-700 dark:text-gray-300">#}
+{#                <span class="w-8 h-8 rounded-lg grid place-items-center shrink-0 bg-gray-100 text-gray-600 group-hover:bg-primary-100 group-hover:text-primary-700 dark:bg-gray-700 dark:text-gray-300 dark:group-hover:bg-primary-800 dark:group-hover:text-primary-200">#}
+{#                  <i class="fa-solid fa-users"></i>#}
+{#                </span>#}
+{#                <span x-show="!sidebarCollapsed" class="ml-3 font-medium truncate">Salle d'attente</span>#}
+{#                <div x-show="!sidebarCollapsed" class="absolute right-3 top-1/2 -translate-y-1/2">#}
+{#                  <span class="text-xs font-medium px-2 py-0.5 rounded-full bg-red-100 text-red-600">12</span>#}
+{#                </div>#}
+{#              </a>#}
+{#            </li>#}
+{#            <li class="relative">#}
+{#              <a href="#" class="group relative flex items-center rounded-xl px-3 py-2 transition-all hover:bg-primary-50 dark:hover:bg-primary-900/30 hover:shadow-sm border-l-4 border-transparent text-gray-700 dark:text-gray-300">#}
+{#                <span class="w-8 h-8 rounded-lg grid place-items-center shrink-0 bg-gray-100 text-gray-600 group-hover:bg-primary-100 group-hover:text-primary-700 dark:bg-gray-700 dark:text-gray-300 dark:group-hover:bg-primary-800 dark:group-hover:text-primary-200">#}
+{#                  <i class="fa-solid fa-calendar-check"></i>#}
+{#                </span>#}
+{#                <span x-show="!sidebarCollapsed" class="ml-3 font-medium truncate">Patients reçus</span>#}
+{#                <div x-show="!sidebarCollapsed" class="absolute right-3 top-1/2 -translate-y-1/2">#}
+{#                  <span class="text-xs font-medium px-2 py-0.5 rounded-full bg-green-100 text-green-600">87</span>#}
+{#                </div>#}
+{#              </a>#}
+{#            </li>#}
+{#            <li class="relative">#}
+{#              <a href="#" class="group relative flex items-center rounded-xl px-3 py-2 transition-all hover:bg-primary-50 dark:hover:bg-primary-900/30 hover:shadow-sm border-l-4 border-transparent text-gray-700 dark:text-gray-300">#}
+{#                <span class="w-8 h-8 rounded-lg grid place-items-center shrink-0 bg-gray-100 text-gray-600 group-hover:bg-primary-100 group-hover:text-primary-700 dark:bg-gray-700 dark:text-gray-300 dark:group-hover:bg-primary-800 dark:group-hover:text-primary-200">#}
+{#                  <i class="fa-solid fa-calendar-days"></i>#}
+{#                </span>#}
+{#                <span x-show="!sidebarCollapsed" class="ml-3 font-medium truncate">Rendez-vous</span>#}
+{#              </a>#}
+{#            </li>#}
+{#          </ul>#}
+{#        </li>#}
+{##}
+{#        <!-- Section Consultation -->#}
+{#        <li>#}
+{#          <h6 x-show="!sidebarCollapsed" class="px-3 mb-2 text-[11px] font-semibold uppercase tracking-wider text-hospital-blue dark:text-primary-200">#}
+{#            Consultation#}
+{#          </h6>#}
+{#          <ul class="space-y-1">#}
+{#            <li class="relative">#}
+{#              <a href="#" class="group relative flex items-center rounded-xl px-3 py-2 transition-all hover:bg-primary-50 dark:hover:bg-primary-900/30 hover:shadow-sm border-l-4 border-transparent text-gray-700 dark:text-gray-300">#}
+{#                <span class="w-8 h-8 rounded-lg grid place-items-center shrink-0 bg-gray-100 text-gray-600 group-hover:bg-primary-100 group-hover:text-primary-700 dark:bg-gray-700 dark:text-gray-300 dark:group-hover:bg-primary-800 dark:group-hover:text-primary-200">#}
+{#                  <i class="fa-solid fa-stethoscope"></i>#}
+{#                </span>#}
+{#                <span x-show="!sidebarCollapsed" class="ml-3 font-medium truncate">Liste Consultations</span>#}
+{#                <div x-show="!sidebarCollapsed" class="absolute right-3 top-1/2 -translate-y-1/2">#}
+{#                  <span class="text-xs font-medium px-2 py-0.5 rounded-full bg-blue-100 text-blue-600">24</span>#}
+{#                </div>#}
+{#              </a>#}
+{#            </li>#}
+{#          </ul>#}
+{#        </li>#}
+{##}
+{#        <!-- Section Urgences -->#}
+{#        <li>#}
+{#          <h6 x-show="!sidebarCollapsed" class="px-3 mb-2 text-[11px] font-semibold uppercase tracking-wider text-hospital-blue dark:text-primary-200">#}
+{#            Urgences#}
+{#          </h6>#}
+{#          <ul class="space-y-1">#}
+{#            <li class="relative">#}
+{#              <a href="#" class="group relative flex items-center rounded-xl px-3 py-2 transition-all hover:bg-primary-50 dark:hover:bg-primary-900/30 hover:shadow-sm border-l-4 border-transparent text-gray-700 dark:text-gray-300">#}
+{#                <span class="w-8 h-8 rounded-lg grid place-items-center shrink-0 bg-gray-100 text-gray-600 group-hover:bg-primary-100 group-hover:text-primary-700 dark:bg-gray-700 dark:text-gray-300 dark:group-hover:bg-primary-800 dark:group-hover:text-primary-200">#}
+{#                  <i class="fa-solid fa-truck-medical"></i>#}
+{#                </span>#}
+{#                <span x-show="!sidebarCollapsed" class="ml-3 font-medium truncate">Liste des Urgences</span>#}
+{#                <div x-show="!sidebarCollapsed" class="absolute right-3 top-1/2 -translate-y-1/2">#}
+{#                  <span class="text-xs font-medium px-2 py-0.5 rounded-full bg-red-100 text-red-600">5</span>#}
+{#                </div>#}
+{#              </a>#}
+{#            </li>#}
+{#          </ul>#}
+{#        </li>#}
+{##}
+{#        <!-- Section Hospitalisation -->#}
+{#        <li>#}
+{#          <h6 x-show="!sidebarCollapsed" class="px-3 mb-2 text-[11px] font-semibold uppercase tracking-wider text-hospital-blue dark:text-primary-200">#}
+{#            Hospitalisation#}
+{#          </h6>#}
+{#          <ul class="space-y-1">#}
+{#            <li class="relative">#}
+{#              <a href="#" class="group relative flex items-center rounded-xl px-3 py-2 transition-all hover:bg-primary-50 dark:hover:bg-primary-900/30 hover:shadow-sm border-l-4 border-transparent text-gray-700 dark:text-gray-300">#}
+{#                <span class="w-8 h-8 rounded-lg grid place-items-center shrink-0 bg-gray-100 text-gray-600 group-hover:bg-primary-100 group-hover:text-primary-700 dark:bg-gray-700 dark:text-gray-300 dark:group-hover:bg-primary-800 dark:group-hover:text-primary-200">#}
+{#                  <i class="fa-solid fa-bed-pulse"></i>#}
+{#                </span>#}
+{#                <span x-show="!sidebarCollapsed" class="ml-3 font-medium truncate">Hospitalisations en cours</span>#}
+{#                <div x-show="!sidebarCollapsed" class="absolute right-3 top-1/2 -translate-y-1/2">#}
+{#                  <span class="text-xs font-medium px-2 py-0.5 rounded-full bg-red-100 text-red-600">18</span>#}
+{#                </div>#}
+{#              </a>#}
+{#            </li>#}
+{#            <li class="relative">#}
+{#              <a href="#" class="group relative flex items-center rounded-xl px-3 py-2 transition-all hover:bg-primary-50 dark:hover:bg-primary-900/30 hover:shadow-sm border-l-4 border-transparent text-gray-700 dark:text-gray-300">#}
+{#                <span class="w-8 h-8 rounded-lg grid place-items-center shrink-0 bg-gray-100 text-gray-600 group-hover:bg-primary-100 group-hover:text-primary-700 dark:bg-gray-700 dark:text-gray-300 dark:group-hover:bg-primary-800 dark:group-hover:text-primary-200">#}
+{#                  <i class="fa-solid fa-clock-rotate-left"></i>#}
+{#                </span>#}
+{#                <span x-show="!sidebarCollapsed" class="ml-3 font-medium truncate">Suivi soins</span>#}
+{#              </a>#}
+{#            </li>#}
+{#            <li class="relative">#}
+{#              <a href="#" class="group relative flex items-center rounded-xl px-3 py-2 transition-all hover:bg-primary-50 dark:hover:bg-primary-900/30 hover:shadow-sm border-l-4 border-transparent text-gray-700 dark:text-gray-300">#}
+{#                <span class="w-8 h-8 rounded-lg grid place-items-center shrink-0 bg-gray-100 text-gray-600 group-hover:bg-primary-100 group-hover:text-primary-700 dark:bg-gray-700 dark:text-gray-300 dark:group-hover:bg-primary-800 dark:group-hover:text-primary-200">#}
+{#                  <i class="fa-solid fa-bed"></i>#}
+{#                </span>#}
+{#                <span x-show="!sidebarCollapsed" class="ml-3 font-medium truncate">Patients hospitalisés</span>#}
+{#                <div x-show="!sidebarCollapsed" class="absolute right-3 top-1/2 -translate-y-1/2">#}
+{#                  <span class="text-xs font-medium px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-600">64</span>#}
+{#                </div>#}
+{#              </a>#}
+{#            </li>#}
+{#            <li class="relative">#}
+{#              <a href="#" class="group relative flex items-center rounded-xl px-3 py-2 transition-all hover:bg-primary-50 dark:hover:bg-primary-900/30 hover:shadow-sm border-l-4 border-transparent text-gray-700 dark:text-gray-300">#}
+{#                <span class="w-8 h-8 rounded-lg grid place-items-center shrink-0 bg-gray-100 text-gray-600 group-hover:bg-primary-100 group-hover:text-primary-700 dark:bg-gray-700 dark:text-gray-300 dark:group-hover:bg-primary-800 dark:group-hover:text-primary-200">#}
+{#                  <i class="fa-solid fa-hospital-user"></i>#}
+{#                </span>#}
+{#                <span x-show="!sidebarCollapsed" class="ml-3 font-medium truncate">Unités d'hospitalisation</span>#}
+{#              </a>#}
+{#            </li>#}
+{#          </ul>#}
+{#        </li>#}
+{##}
+{#        <!-- Section Suivi Patients -->#}
+{#        <li>#}
+{#          <h6 x-show="!sidebarCollapsed" class="px-3 mb-2 text-[11px] font-semibold uppercase tracking-wider text-hospital-blue dark:text-primary-200">#}
+{#            Suivi Patients#}
+{#          </h6>#}
+{#          <ul class="space-y-1">#}
+{#            <li class="relative">#}
+{#              <a href="#" class="group relative flex items-center rounded-xl px-3 py-2 transition-all hover:bg-primary-50 dark:hover:bg-primary-900/30 hover:shadow-sm border-l-4 border-transparent text-gray-700 dark:text-gray-300">#}
+{#                <span class="w-8 h-8 rounded-lg grid place-items-center shrink-0 bg-gray-100 text-gray-600 group-hover:bg-primary-100 group-hover:text-primary-700 dark:bg-gray-700 dark:text-gray-300 dark:group-hover:bg-primary-800 dark:group-hover:text-primary-200">#}
+{#                  <i class="fa-solid fa-file-arrow-up"></i>#}
+{#                </span>#}
+{#                <span x-show="!sidebarCollapsed" class="ml-3 font-medium truncate">Bilans Initiaux</span>#}
+{#                <div x-show="!sidebarCollapsed" class="absolute right-3 top-1/2 -translate-y-1/2">#}
+{#                  <span class="text-xs font-medium px-2 py-0.5 rounded-full bg-amber-100 text-amber-600">9</span>#}
+{#                </div>#}
+{#              </a>#}
+{#            </li>#}
+{#            <li class="relative">#}
+{#              <a href="#" class="group relative flex items-center rounded-xl px-3 py-2 transition-all hover:bg-primary-50 dark:hover:bg-primary-900/30 hover:shadow-sm border-l-4 border-transparent text-gray-700 dark:text-gray-300">#}
+{#                <span class="w-8 h-8 rounded-lg grid place-items-center shrink-0 bg-gray-100 text-gray-600 group-hover:bg-primary-100 group-hover:text-primary-700 dark:bg-gray-700 dark:text-gray-300 dark:group-hover:bg-primary-800 dark:group-hover:text-primary-200">#}
+{#                  <i class="fa-solid fa-folder-tree"></i>#}
+{#                </span>#}
+{#                <span x-show="!sidebarCollapsed" class="ml-3 font-medium truncate">Suivi des Patients</span>#}
+{#                <div x-show="!sidebarCollapsed" class="absolute right-3 top-1/2 -translate-y-1/2">#}
+{#                  <span class="text-xs font-medium px-2 py-0.5 rounded-full bg-red-100 text-red-600">4</span>#}
+{#                </div>#}
+{#              </a>#}
+{#            </li>#}
+{#          </ul>#}
+{#        </li>#}
+{##}
+{#        <!-- Section Maladies sous surveillance -->#}
+{#        <li>#}
+{#          <h6 x-show="!sidebarCollapsed" class="px-3 mb-2 text-[11px] font-semibold uppercase tracking-wider text-hospital-blue dark:text-primary-200">#}
+{#            Maladies sous surveillance#}
+{#          </h6>#}
+{#          <ul class="space-y-1">#}
+{#            <li class="relative">#}
+{#              <button type="button" @click="toggleSub('diseases')" class="group w-full relative flex items-center justify-between rounded-xl px-3 py-2 transition-all hover:bg-primary-50 dark:hover:bg-primary-900/30 hover:shadow-sm border-l-4 border-primary-500 text-primary-700 dark:text-primary-200">#}
+{#                <div class="flex items-center min-w-0">#}
+{#                  <span class="w-8 h-8 rounded-lg grid place-items-center shrink-0 bg-rose-100 text-rose-600 group-hover:bg-rose-200 group-hover:text-rose-700 dark:bg-rose-900/30 dark:text-rose-300">#}
+{#                    <i class="fa-solid fa-virus"></i>#}
+{#                  </span>#}
+{#                  <span x-show="!sidebarCollapsed" class="ml-3 font-medium truncate">Pathologies</span>#}
+{#                </div>#}
+{#                <em x-show="!sidebarCollapsed" class="fa-solid text-xs transition-transform fa-chevron-down text-gray-400 group-hover:text-primary-600"></em>#}
+{#              </button>#}
+{#              <ul x-show="isOpen('diseases') && !sidebarCollapsed" class="mt-1 ml-4 pl-2 border-l-2 border-gray-200 dark:border-gray-700 space-y-1">#}
+{#                <li>#}
+{#                  <a href="#" class="group flex items-center px-3 py-2 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-all">#}
+{#                    <i class="fa-solid fa-bug mr-3 text-primary-600 dark:text-primary-300"></i>#}
+{#                    <span class="text-sm text-gray-700 dark:text-gray-300 group-hover:text-primary-700 dark:group-hover:text-primary-200">Paludisme</span>#}
+{#                    <span class="ml-auto text-[11px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200">3</span>#}
+{#                  </a>#}
+{#                </li>#}
+{#                <li>#}
+{#                  <a href="#" class="group flex items-center px-3 py-2 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-all">#}
+{#                    <i class="fa-solid fa-lungs mr-3 text-primary-600 dark:text-primary-300"></i>#}
+{#                    <span class="text-sm text-gray-700 dark:text-gray-300 group-hover:text-primary-700 dark:group-hover:text-primary-200">Tuberculose</span>#}
+{#                    <span class="ml-auto text-[11px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200">1</span>#}
+{#                  </a>#}
+{#                </li>#}
+{#                <li>#}
+{#                  <a href="#" class="group flex items-center px-3 py-2 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-all">#}
+{#                    <i class="fa-solid fa-virus mr-3 text-primary-600 dark:text-primary-300"></i>#}
+{#                    <span class="text-sm text-gray-700 dark:text-gray-300 group-hover:text-primary-700 dark:group-hover:text-primary-200">COVID-19</span>#}
+{#                    <span class="ml-auto text-[11px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200">0</span>#}
+{#                  </a>#}
+{#                </li>#}
+{#              </ul>#}
+{#            </li>#}
+{#          </ul>#}
+{#        </li>#}
+{##}
+{#        <!-- Section Laboratoire -->#}
+{#        <li>#}
+{#          <h6 x-show="!sidebarCollapsed" class="px-3 mb-2 text-[11px] font-semibold uppercase tracking-wider text-hospital-blue dark:text-primary-200">#}
+{#            Laboratoire#}
+{#          </h6>#}
+{#          <ul class="space-y-1">#}
+{#            <li class="relative">#}
+{#              <a href="#" class="group relative flex items-center rounded-xl px-3 py-2 transition-all hover:bg-primary-50 dark:hover:bg-primary-900/30 hover:shadow-sm border-l-4 border-transparent text-gray-700 dark:text-gray-300">#}
+{#                <span class="w-8 h-8 rounded-lg grid place-items-center shrink-0 bg-gray-100 text-gray-600 group-hover:bg-primary-100 group-hover:text-primary-700 dark:bg-gray-700 dark:text-gray-300 dark:group-hover:bg-primary-800 dark:group-hover:text-primary-200">#}
+{#                  <i class="fa-solid fa-vial"></i>#}
+{#                </span>#}
+{#                <span x-show="!sidebarCollapsed" class="ml-3 font-medium truncate">Prélèvements</span>#}
+{#              </a>#}
+{#            </li>#}
+{#            <li class="relative">#}
+{#              <a href="#" class="group relative flex items-center rounded-xl px-3 py-2 transition-all hover:bg-primary-50 dark:hover:bg-primary-900/30 hover:shadow-sm border-l-4 border-transparent text-gray-700 dark:text-gray-300">#}
+{#                <span class="w-8 h-8 rounded-lg grid place-items-center shrink-0 bg-gray-100 text-gray-600 group-hover:bg-primary-100 group-hover:text-primary-700 dark:bg-gray-700 dark:text-gray-300 dark:group-hover:bg-primary-800 dark:group-hover:text-primary-200">#}
+{#                  <i class="fa-solid fa-flask-vial"></i>#}
+{#                </span>#}
+{#                <span x-show="!sidebarCollapsed" class="ml-3 font-medium truncate">Demande d'Analyse</span>#}
+{#                <div x-show="!sidebarCollapsed" class="absolute right-3 top-1/2 -translate-y-1/2">#}
+{#                  <span class="text-xs font-medium px-2 py-0.5 rounded-full bg-red-100 text-red-600">7</span>#}
+{#                </div>#}
+{#              </a>#}
+{#            </li>#}
+{#            <li class="relative">#}
+{#              <a href="#" class="group relative flex items-center rounded-xl px-3 py-2 transition-all hover:bg-primary-50 dark:hover:bg-primary-900/30 hover:shadow-sm border-l-4 border-transparent text-gray-700 dark:text-gray-300">#}
+{#                <span class="w-8 h-8 rounded-lg grid place-items-center shrink-0 bg-gray-100 text-gray-600 group-hover:bg-primary-100 group-hover:text-primary-700 dark:bg-gray-700 dark:text-gray-300 dark:group-hover:bg-primary-800 dark:group-hover:text-primary-200">#}
+{#                  <i class="fa-solid fa-check-double"></i>#}
+{#                </span>#}
+{#                <span x-show="!sidebarCollapsed" class="ml-3 font-medium truncate">Analyses effectuées</span>#}
+{#                <div x-show="!sidebarCollapsed" class="absolute right-3 top-1/2 -translate-y-1/2">#}
+{#                  <span class="text-xs font-medium px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-600">52</span>#}
+{#                </div>#}
+{#              </a>#}
+{#            </li>#}
+{#          </ul>#}
+{#        </li>#}
+{##}
+{#        <!-- Section Pharmacie -->#}
+{#        <li>#}
+{#          <h6 x-show="!sidebarCollapsed" class="px-3 mb-2 text-[11px] font-semibold uppercase tracking-wider text-hospital-blue dark:text-primary-200">#}
+{#            Pharmacie#}
+{#          </h6>#}
+{#          <ul class="space-y-1">#}
+{#            <li class="relative">#}
+{#              <a href="#" class="group relative flex items-center rounded-xl px-3 py-2 transition-all hover:bg-primary-50 dark:hover:bg-primary-900/30 hover:shadow-sm border-l-4 border-transparent text-gray-700 dark:text-gray-300">#}
+{#                <span class="w-8 h-8 rounded-lg grid place-items-center shrink-0 bg-gray-100 text-gray-600 group-hover:bg-primary-100 group-hover:text-primary-700 dark:bg-gray-700 dark:text-gray-300 dark:group-hover:bg-primary-800 dark:group-hover:text-primary-200">#}
+{#                  <i class="fa-solid fa-prescription-bottle-medical"></i>#}
+{#                </span>#}
+{#                <span x-show="!sidebarCollapsed" class="ml-3 font-medium truncate">Médicaments</span>#}
+{#              </a>#}
+{#            </li>#}
+{#          </ul>#}
+{#        </li>#}
+{##}
+{#        <!-- Section Administration -->#}
+{#        <li>#}
+{#          <h6 x-show="!sidebarCollapsed" class="px-3 mb-2 text-[11px] font-semibold uppercase tracking-wider text-hospital-blue dark:text-primary-200">#}
+{#            Administration#}
+{#          </h6>#}
+{#          <ul class="space-y-1">#}
+{#            <li class="relative">#}
+{#              <a href="#" class="group relative flex items-center rounded-xl px-3 py-2 transition-all hover:bg-primary-50 dark:hover:bg-primary-900/30 hover:shadow-sm border-l-4 border-transparent text-gray-700 dark:text-gray-300">#}
+{#                <span class="w-8 h-8 rounded-lg grid place-items-center shrink-0 bg-gray-100 text-gray-600 group-hover:bg-primary-100 group-hover:text-primary-700 dark:bg-gray-700 dark:text-gray-300 dark:group-hover:bg-primary-800 dark:group-hover:text-primary-200">#}
+{#                  <i class="fa-solid fa-user-circle"></i>#}
+{#                </span>#}
+{#                <span x-show="!sidebarCollapsed" class="ml-3 font-medium truncate">Gestion des Employés</span>#}
+{#              </a>#}
+{#            </li>#}
+{#            <li class="relative">#}
+{#              <a href="#" class="group relative flex items-center rounded-xl px-3 py-2 transition-all hover:bg-primary-50 dark:hover:bg-primary-900/30 hover:shadow-sm border-l-4 border-transparent text-gray-700 dark:text-gray-300">#}
+{#                <span class="w-8 h-8 rounded-lg grid place-items-center shrink-0 bg-gray-100 text-gray-600 group-hover:bg-primary-100 group-hover:text-primary-700 dark:bg-gray-700 dark:text-gray-300 dark:group-hover:bg-primary-800 dark:group-hover:text-primary-200">#}
+{#                  <i class="fa-solid fa-user-shield"></i>#}
+{#                </span>#}
+{#                <span x-show="!sidebarCollapsed" class="ml-3 font-medium truncate">Gestion des Rôles</span>#}
+{#              </a>#}
+{#            </li>#}
+{#          </ul>#}
+{#        </li>#}
+{##}
+{#        <!-- Section Spécialités (CI — Ordre des Médecins) -->#}
+{#        <li>#}
+{#          <h6 x-show="!sidebarCollapsed" class="px-3 mb-2 text-[11px] font-semibold uppercase tracking-wider text-hospital-blue dark:text-primary-200">#}
+{#            Spécialités (CI — Ordre des Médecins)#}
+{#          </h6>#}
+{#          <ul class="space-y-1">#}
+{#            <li class="relative">#}
+{#              <button type="button" @click="toggleSub('specialites-ci')" class="group w-full relative flex items-center justify-between rounded-xl px-3 py-2 transition-all hover:bg-primary-50 dark:hover:bg-primary-900/30 hover:shadow-sm border-l-4 border-primary-500 text-primary-700 dark:text-primary-200">#}
+{#                <div class="flex items-center min-w-0">#}
+{#                  <span class="w-8 h-8 rounded-lg grid place-items-center shrink-0 bg-rose-100 text-rose-600 group-hover:bg-rose-200 group-hover:text-rose-700 dark:bg-rose-900/30 dark:text-rose-300">#}
+{#                    <i class="fa-solid fa-briefcase-medical"></i>#}
+{#                  </span>#}
+{#                  <span x-show="!sidebarCollapsed" class="ml-3 font-medium truncate">Spécialités médicales</span>#}
+{#                </div>#}
+{#                <em x-show="!sidebarCollapsed" class="fa-solid text-xs transition-transform fa-chevron-down text-gray-400 group-hover:text-primary-600"></em>#}
+{#              </button>#}
+{#              <ul x-show="isOpen('specialites-ci') && !sidebarCollapsed" class="mt-1 ml-4 pl-2 border-l-2 border-gray-200 dark:border-gray-700 space-y-1">#}
+{#                <li>#}
+{#                  <a href="#" class="group flex items-center px-3 py-2 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-all">#}
+{#                    <i class="fa-solid fa-lungs mr-3 text-primary-600 dark:text-primary-300"></i>#}
+{#                    <span class="text-sm text-gray-700 dark:text-gray-300 group-hover:text-primary-700 dark:group-hover:text-primary-200">Allergologie</span>#}
+{#                  </a>#}
+{#                </li>#}
+{#                <li>#}
+{#                  <a href="#" class="group flex items-center px-3 py-2 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-all">#}
+{#                    <i class="fa-solid fa-venus-mars mr-3 text-primary-600 dark:text-primary-300"></i>#}
+{#                    <span class="text-sm text-gray-700 dark:text-gray-300 group-hover:text-primary-700 dark:group-hover:text-primary-200">Andrologie</span>#}
+{#                  </a>#}
+{#                </li>#}
+{#                <li>#}
+{#                  <a href="#" class="group flex items-center px-3 py-2 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-all">#}
+{#                    <i class="fa-solid fa-syringe mr-3 text-primary-600 dark:text-primary-300"></i>#}
+{#                    <span class="text-sm text-gray-700 dark:text-gray-300 group-hover:text-primary-700 dark:group-hover:text-primary-200">Anesthésie-Réanimation</span>#}
+{#                  </a>#}
+{#                </li>#}
+{#                <li>#}
+{#                  <a href="#" class="group flex items-center px-3 py-2 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-all">#}
+{#                    <i class="fa-solid fa-dna mr-3 text-primary-600 dark:text-primary-300"></i>#}
+{#                    <span class="text-sm text-gray-700 dark:text-gray-300 group-hover:text-primary-700 dark:group-hover:text-primary-200">Biologie médicale</span>#}
+{#                  </a>#}
+{#                </li>#}
+{#                <li>#}
+{#                  <a href="#" class="group flex items-center px-3 py-2 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-all">#}
+{#                    <i class="fa-solid fa-heart-pulse mr-3 text-primary-600 dark:text-primary-300"></i>#}
+{#                    <span class="text-sm text-gray-700 dark:text-gray-300 group-hover:text-primary-700 dark:group-hover:text-primary-200">Cardiologie</span>#}
+{#                  </a>#}
+{#                </li>#}
+{#                <li>#}
+{#                  <a href="#" class="group flex items-center px-3 py-2 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-all">#}
+{#                    <i class="fa-solid fa-scissors mr-3 text-primary-600 dark:text-primary-300"></i>#}
+{#                    <span class="text-sm text-gray-700 dark:text-gray-300 group-hover:text-primary-700 dark:group-hover:text-primary-200">Chirurgie</span>#}
+{#                  </a>#}
+{#                </li>#}
+{#                <li>#}
+{#                  <a href="#" class="group flex items-center px-3 py-2 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-all">#}
+{#                    <i class="fa-solid fa-sun mr-3 text-primary-600 dark:text-primary-300"></i>#}
+{#                    <span class="text-sm text-gray-700 dark:text-gray-300 group-hover:text-primary-700 dark:group-hover:text-primary-200">Dermatologie</span>#}
+{#                  </a>#}
+{#                </li>#}
+{#                <li>#}
+{#                  <a href="#" class="group flex items-center px-3 py-2 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-all">#}
+{#                    <i class="fa-solid fa-vial mr-3 text-primary-600 dark:text-primary-300"></i>#}
+{#                    <span class="text-sm text-gray-700 dark:text-gray-300 group-hover:text-primary-700 dark:group-hover:text-primary-200">Endocrinologie</span>#}
+{#                  </a>#}
+{#                </li>#}
+{#                <li>#}
+{#                  <a href="#" class="group flex items-center px-3 py-2 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-all">#}
+{#                    <i class="fa-solid fa-person-cane mr-3 text-primary-600 dark:text-primary-300"></i>#}
+{#                    <span class="text-sm text-gray-700 dark:text-gray-300 group-hover:text-primary-700 dark:group-hover:text-primary-200">Gériatrie</span>#}
+{#                  </a>#}
+{#                </li>#}
+{#                <li>#}
+{#                  <a href="#" class="group flex items-center px-3 py-2 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-all">#}
+{#                    <i class="fa-solid fa-clipboard mr-3 text-primary-600 dark:text-primary-300"></i>#}
+{#                    <span class="text-sm text-gray-700 dark:text-gray-300 group-hover:text-primary-700 dark:group-hover:text-primary-200">Gastro-entérologie</span>#}
+{#                  </a>#}
+{#                </li>#}
+{#                <li>#}
+{#                  <a href="#" class="group flex items-center px-3 py-2 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-all">#}
+{#                    <i class="fa-solid fa-person-pregnant mr-3 text-primary-600 dark:text-primary-300"></i>#}
+{#                    <span class="text-sm text-gray-700 dark:text-gray-300 group-hover:text-primary-700 dark:group-hover:text-primary-200">Gynécologie-Obstétrique</span>#}
+{#                  </a>#}
+{#                </li>#}
+{#                <li>#}
+{#                  <a href="#" class="group flex items-center px-3 py-2 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-all">#}
+{#                    <i class="fa-solid fa-camera mr-3 text-primary-600 dark:text-primary-300"></i>#}
+{#                    <span class="text-sm text-gray-700 dark:text-gray-300 group-hover:text-primary-700 dark:group-hover:text-primary-200">Imagerie médicale / Radiologie</span>#}
+{#                  </a>#}
+{#                </li>#}
+{#                <li>#}
+{#                  <a href="#" class="group flex items-center px-3 py-2 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-all">#}
+{#                    <i class="fa-solid fa-droplet mr-3 text-primary-600 dark:text-primary-300"></i>#}
+{#                    <span class="text-sm text-gray-700 dark:text-gray-300 group-hover:text-primary-700 dark:group-hover:text-primary-200">Néphrologie</span>#}
+{#                  </a>#}
+{#                </li>#}
+{#                <li>#}
+{#                  <a href="#" class="group flex items-center px-3 py-2 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-all">#}
+{#                    <i class="fa-solid fa-brain mr-3 text-primary-600 dark:text-primary-300"></i>#}
+{#                    <span class="text-sm text-gray-700 dark:text-gray-300 group-hover:text-primary-700 dark:group-hover:text-primary-200">Neurologie</span>#}
+{#                  </a>#}
+{#                </li>#}
+{#                <li>#}
+{#                  <a href="#" class="group flex items-center px-3 py-2 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-all">#}
+{#                    <i class="fa-solid fa-apple-whole mr-3 text-primary-600 dark:text-primary-300"></i>#}
+{#                    <span class="text-sm text-gray-700 dark:text-gray-300 group-hover:text-primary-700 dark:group-hover:text-primary-200">Nutrition</span>#}
+{#                  </a>#}
+{#                </li>#}
+{#                <li>#}
+{#                  <a href="#" class="group flex items-center px-3 py-2 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-all">#}
+{#                    <i class="fa-solid fa-eye mr-3 text-primary-600 dark:text-primary-300"></i>#}
+{#                    <span class="text-sm text-gray-700 dark:text-gray-300 group-hover:text-primary-700 dark:group-hover:text-primary-200">Ophtalmologie</span>#}
+{#                  </a>#}
+{#                </li>#}
+{#                <li>#}
+{#                  <a href="#" class="group flex items-center px-3 py-2 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-all">#}
+{#                    <i class="fa-solid fa-ear-listen mr-3 text-primary-600 dark:text-primary-300"></i>#}
+{#                    <span class="text-sm text-gray-700 dark:text-gray-300 group-hover:text-primary-700 dark:group-hover:text-primary-200">ORL (Oto-Rhino-Laryngologie)</span>#}
+{#                  </a>#}
+{#                </li>#}
+{#                <li>#}
+{#                  <a href="#" class="group flex items-center px-3 py-2 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-all">#}
+{#                    <i class="fa-solid fa-baby mr-3 text-primary-600 dark:text-primary-300"></i>#}
+{#                    <span class="text-sm text-gray-700 dark:text-gray-300 group-hover:text-primary-700 dark:group-hover:text-primary-200">Pédiatrie</span>#}
+{#                  </a>#}
+{#                </li>#}
+{#                <li>#}
+{#                  <a href="#" class="group flex items-center px-3 py-2 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-all">#}
+{#                    <i class="fa-solid fa-lungs mr-3 text-primary-600 dark:text-primary-300"></i>#}
+{#                    <span class="text-sm text-gray-700 dark:text-gray-300 group-hover:text-primary-700 dark:group-hover:text-primary-200">Pneumologie</span>#}
+{#                  </a>#}
+{#                </li>#}
+{#                <li>#}
+{#                  <a href="#" class="group flex items-center px-3 py-2 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-all">#}
+{#                    <i class="fa-solid fa-brain mr-3 text-primary-600 dark:text-primary-300"></i>#}
+{#                    <span class="text-sm text-gray-700 dark:text-gray-300 group-hover:text-primary-700 dark:group-hover:text-primary-200">Psychiatrie</span>#}
+{#                  </a>#}
+{#                </li>#}
+{#                <li>#}
+{#                  <a href="#" class="group flex items-center px-3 py-2 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-all">#}
+{#                    <i class="fa-solid fa-people-group mr-3 text-primary-600 dark:text-primary-300"></i>#}
+{#                    <span class="text-sm text-gray-700 dark:text-gray-300 group-hover:text-primary-700 dark:group-hover:text-primary-200">Santé publique</span>#}
+{#                  </a>#}
+{#                </li>#}
+{#                <li>#}
+{#                  <a href="#" class="group flex items-center px-3 py-2 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-all">#}
+{#                    <i class="fa-solid fa-tooth mr-3 text-primary-600 dark:text-primary-300"></i>#}
+{#                    <span class="text-sm text-gray-700 dark:text-gray-300 group-hover:text-primary-700 dark:group-hover:text-primary-200">Stomatologie</span>#}
+{#                  </a>#}
+{#                </li>#}
+{#              </ul>#}
+{#            </li>#}
+{#          </ul>#}
+{#        </li>#}
+{#      </ul>#}
+{##}
+{#      <!-- Actions rapides pied -->#}
+{#      <div x-show="!sidebarCollapsed" class="mt-4 px-4 pb-4">#}
+{#        <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-4">#}
+{#          <h6 class="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2">Actions rapides</h6>#}
+{#          <div class="flex gap-2">#}
+{#            <button class="flex-1 bg-primary-50 text-primary-700 text-xs font-medium py-2 px-3 rounded-lg text-center hover:bg-primary-100 dark:bg-primary-900/30 dark:text-primary-200" @click="notify('success','Nouveau','Ouverture d'un nouveau dossier')">#}
+{#              <i class="fas fa-plus mr-1"></i> Nouveau#}
+{#            </button>#}
+{#            <button class="flex-1 bg-green-50 text-green-700 text-xs font-medium py-2 px-3 rounded-lg text-center hover:bg-green-100 dark:bg-green-900/30 dark:text-green-200" @click="notify('info','Recherche','Ouverture de la recherche globale')">#}
+{#              <i class="fas fa-search mr-1"></i> Rechercher#}
+{#            </button>#}
+{#          </div>#}
+{#        </div>#}
+{#      </div>#}
+{#    </nav>#}
+{##}
+{#    <!-- Bloc utilisateur (pied) -->#}
+{#    <div class="p-4 border-t border-gray-200 dark:border-gray-700">#}
+{#      <div class="flex items-center">#}
+{#        <img src="https://randomuser.me/api/portraits/women/68.jpg" alt="Utilisateur" class="w-10 h-10 rounded-full object-cover"/>#}
+{#        <div x-show="!sidebarCollapsed" class="ml-3">#}
+{#          <p class="font-medium">Dr. S. Martin</p>#}
+{#          <p class="text-sm text-gray-500 dark:text-gray-400">Cardiologue</p>#}
+{#        </div>#}
+{#      </div>#}
+{#    </div>#}
+{#  </aside>#}

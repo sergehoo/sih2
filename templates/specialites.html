@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="fr" class="h-full" x-data="specialitesApp()" x-init="init()">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Spécialités Médicales - CHU National</title>
+
+  <!-- Tailwind -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Alpine.js -->
+  <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            primary: {
+              50: '#f0fdfa',
+              100: '#ccfbf1',
+              200: '#99f6e4',
+              300: '#5eead4',
+              400: '#2dd4bf',
+              500: '#14b8a6',
+              600: '#0d9488',
+              700: '#0f766e',
+              800: '#115e59',
+              900: '#134e4a',
+            },
+            hospital: {
+              blue: '#1e40af',
+              teal: '#0d9488',
+              emerald: '#10b981',
+              amber: '#f59e0b',
+              rose: '#f43f5e'
+            }
+          },
+          animation: {
+            'pulse-soft': 'pulse-soft 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            'fade-in': 'fade-in .35s ease-out both',
+            'slide-in': 'slide-in .3s ease-out both'
+          },
+          keyframes: {
+            'pulse-soft': {'0%,100%': {opacity: 1}, '50%': {opacity: .85}},
+            'fade-in': {'0%': {opacity: 0}, '100%': {opacity: 1}},
+            'slide-in': {'0%': {transform: 'translateX(100%)'}, '100%': {transform: 'translateX(0)'}}
+          },
+          boxShadow: {soft: '0 8px 30px rgba(2,6,23,.08)'}
+        }
+      }
+    }
+  </script>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+    * { font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", sans-serif; }
+
+    .sidebar-transition { transition: width .3s ease; }
+    .card-hover { transition: transform .2s ease, box-shadow .2s ease; }
+    .card-hover:hover { transform: translateY(-2px); box-shadow: 0 10px 25px -5px rgba(0,0,0,.08), 0 10px 10px -5px rgba(0,0,0,.04); }
+
+    /* Transitions */
+    .fade-enter-active, .fade-leave-active { transition: opacity .25s ease; }
+    .fade-enter-from, .fade-leave-to { opacity: 0; }
+    .slide-enter-active, .slide-leave-active { transition: transform .3s ease; }
+    .slide-enter-from, .slide-leave-to { transform: translateX(100%); }
+
+    /* Reduce motion */
+    @media (prefers-reduced-motion: reduce) {
+      * { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+    }
+
+    /* Scrollbar */
+    .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    .dark .custom-scrollbar::-webkit-scrollbar-track { background: #334155; }
+    .dark .custom-scrollbar::-webkit-scrollbar-thumb { background: #475569; }
+    .dark .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #64748b; }
+  </style>
+</head>
+
+<body class="h-full bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-100 transition-colors duration-300">
+<div id="app" class="h-full flex" @keyup.escape="closeOverlays()" tabindex="0">
+
+  <!-- ===== Sidebar ===== -->
+  <aside class="sidebar-transition bg-white dark:bg-gray-800 shadow-xl flex flex-col overflow-hidden w-72" aria-label="Navigation latérale">
+    <!-- En-tête / Brand -->
+    <div class="px-4 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between bg-gradient-to-r from-primary-600 to-primary-700">
+      <div class="flex items-center">
+        <div class="w-10 h-10 grid place-items-center rounded-xl bg-white/10 text-white shadow-soft">
+          <i class="fa-solid fa-hospital"></i>
+        </div>
+        <div class="ml-3 overflow-hidden">
+          <h1 class="text-lg font-bold leading-tight text-white">CHU - MSHPCMU</h1>
+          <p class="text-xs text-primary-100">Spécialités Médicales</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="flex-1 overflow-y-auto custom-scrollbar bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-gray-800 py-4">
+      <ul class="space-y-2 px-3">
+        <li>
+          <a href="dashboard.html" class="flex items-center px-3 py-2 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-primary-50 dark:hover:bg-primary-900/30">
+            <i class="fa-solid fa-arrow-left mr-3 w-5"></i>
+            <span>Retour au tableau de bord</span>
+          </a>
+        </li>
+        <li class="pt-4">
+          <h3 class="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400 px-3 mb-2">Navigation</h3>
+        </li>
+        <li>
+          <a href="#" class="flex items-center px-3 py-2 rounded-lg bg-primary-50 dark:bg-primary-900/40 text-primary-700 dark:text-primary-200 border-l-4 border-primary-500">
+            <i class="fa-solid fa-briefcase-medical mr-3 w-5"></i>
+            <span>Toutes les spécialités</span>
+          </a>
+        </li>
+        <li>
+          <a href="#" class="flex items-center px-3 py-2 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-primary-50 dark:hover:bg-primary-900/30">
+            <i class="fa-solid fa-user-doctor mr-3 w-5"></i>
+            <span>Médecins par spécialité</span>
+          </a>
+        </li>
+        <li>
+          <a href="#" class="flex items-center px-3 py-2 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-primary-50 dark:hover:bg-primary-900/30">
+            <i class="fa-solid fa-calendar-check mr-3 w-5"></i>
+            <span>Disponibilités</span>
+          </a>
+        </li>
+        <li>
+          <a href="#" class="flex items-center px-3 py-2 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-primary-50 dark:hover:bg-primary-900/30">
+            <i class="fa-solid fa-chart-line mr-3 w-5"></i>
+            <span>Statistiques</span>
+          </a>
+        </li>
+      </ul>
+    </nav>
+  </aside>
+
+  <!-- ===== Main ===== -->
+  <div class="flex-1 flex flex-col min-w-0">
+    <!-- Topbar -->
+    <header class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 md:px-6 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <h2 class="text-lg font-semibold">Gestion des Spécialités Médicales</h2>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <!-- Search -->
+        <label class="flex items-center bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg px-3">
+          <i class="fa-solid fa-magnifying-glass text-gray-400"></i>
+          <input placeholder="Rechercher une spécialité..." 
+                 x-model="searchQuery"
+                 class="px-2 py-1 bg-transparent outline-none w-64 text-sm"/>
+        </label>
+
+        <!-- Theme -->
+        <button @click="toggleDarkMode()" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700" aria-label="Basculer le thème">
+          <i :class="darkMode ? 'fa-solid fa-sun' : 'fa-solid fa-moon'"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- Content -->
+    <main class="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-6">
+      <!-- Filtres et Actions -->
+      <section class="mb-6 bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4">
+        <div class="flex flex-wrap items-center justify-between gap-4">
+          <div class="flex flex-wrap items-center gap-3">
+            <h3 class="font-semibold">Filtres :</h3>
+            <div class="flex flex-wrap gap-2">
+              <button @click="setFilter('all')" 
+                      :class="[
+                        'px-3 py-1 rounded-full text-xs font-medium transition-colors',
+                        activeFilter === 'all' 
+                          ? 'bg-hospital-blue text-white' 
+                          : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                      ]">
+                Toutes
+              </button>
+              <button @click="setFilter('medical')" 
+                      :class="[
+                        'px-3 py-1 rounded-full text-xs font-medium transition-colors',
+                        activeFilter === 'medical' 
+                          ? 'bg-hospital-teal text-white' 
+                          : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                      ]">
+                Médicales
+              </button>
+              <button @click="setFilter('surgical')" 
+                      :class="[
+                        'px-3 py-1 rounded-full text-xs font-medium transition-colors',
+                        activeFilter === 'surgical' 
+                          ? 'bg-hospital-emerald text-white' 
+                          : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                      ]">
+                Chirurgicales
+              </button>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <button class="px-4 py-2 bg-hospital-blue text-white rounded-lg hover:bg-blue-700 flex items-center"
+                    @click="showAddSpecialiteModal = true">
+              <i class="fa-solid fa-plus mr-2"></i>Nouvelle spécialité
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- KPIs -->
+      <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div class="card-hover bg-white dark:bg-gray-800 rounded-xl shadow-sm p-5 border-l-4 border-hospital-blue">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm text-gray-500 dark:text-gray-400">Spécialités actives</p>
+              <h3 class="text-2xl font-extrabold mt-1" x-text="stats.total"></h3>
+            </div>
+            <div class="p-3 rounded-lg bg-blue-100 text-hospital-blue dark:bg-blue-900/30">
+              <i class="fa-solid fa-briefcase-medical"></i>
+            </div>
+          </div>
+        </div>
+        <div class="card-hover bg-white dark:bg-gray-800 rounded-xl shadow-sm p-5 border-l-4 border-hospital-teal">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm text-gray-500 dark:text-gray-400">Médecins spécialistes</p>
+              <h3 class="text-2xl font-extrabold mt-1" x-text="stats.totalDoctors"></h3>
+            </div>
+            <div class="p-3 rounded-lg bg-teal-100 text-hospital-teal dark:bg-teal-900/30">
+              <i class="fa-solid fa-user-doctor"></i>
+            </div>
+          </div>
+        </div>
+        <div class="card-hover bg-white dark:bg-gray-800 rounded-xl shadow-sm p-5 border-l-4 border-hospital-emerald">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm text-gray-500 dark:text-gray-400">Consultations/mois</p>
+              <h3 class="text-2xl font-extrabold mt-1" x-text="stats.totalConsultations"></h3>
+            </div>
+            <div class="p-3 rounded-lg bg-emerald-100 text-hospital-emerald dark:bg-emerald-900/30">
+              <i class="fa-solid fa-stethoscope"></i>
+            </div>
+          </div>
+        </div>
+        <div class="card-hover bg-white dark:bg-gray-800 rounded-xl shadow-sm p-5 border-l-4 border-hospital-amber">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm text-gray-500 dark:text-gray-400">Taux d'occupation</p>
+              <h3 class="text-2xl font-extrabold mt-1" x-text="stats.occupationRate + '%'"></h3>
+            </div>
+            <div class="p-3 rounded-lg bg-amber-100 text-hospital-amber dark:bg-amber-900/30">
+              <i class="fa-solid fa-bed-pulse"></i>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Grille des spécialités -->
+      <section class="mb-8">
+        <h3 class="text-lg font-semibold mb-4">Spécialités Médicales</h3>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          <template x-for="specialite in filteredSpecialites" :key="specialite.id">
+            <div class="card-hover bg-white dark:bg-gray-800 rounded-xl shadow-sm p-5 border-l-4"
+                 :class="{
+                   'border-hospital-blue': specialite.type === 'medical',
+                   'border-hospital-emerald': specialite.type === 'surgical',
+                   'border-hospital-amber': specialite.type === 'diagnostic'
+                 }">
+              <div class="flex items-start justify-between mb-3">
+                <div class="flex items-center">
+                  <div class="w-10 h-10 rounded-lg grid place-items-center mr-3"
+                       :class="{
+                         'bg-blue-100 text-hospital-blue': specialite.type === 'medical',
+                         'bg-emerald-100 text-hospital-emerald': specialite.type === 'surgical',
+                         'bg-amber-100 text-hospital-amber': specialite.type === 'diagnostic'
+                       }">
+                    <i :class="specialite.icon"></i>
+                  </div>
+                  <div>
+                    <h4 class="font-semibold" x-text="specialite.nom"></h4>
+                    <span class="text-xs px-2 py-1 rounded-full"
+                          :class="{
+                            'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200': specialite.type === 'medical',
+                            'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-200': specialite.type === 'surgical',
+                            'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200': specialite.type === 'diagnostic'
+                          }"
+                          x-text="specialite.type === 'medical' ? 'Médicale' : specialite.type === 'surgical' ? 'Chirurgicale' : 'Diagnostique'">
+                    </span>
+                  </div>
+                </div>
+                <div class="relative">
+                  <button @click="toggleSpecialiteMenu(specialite.id)" 
+                          class="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
+                    <i class="fa-solid fa-ellipsis-vertical"></i>
+                  </button>
+                  <div x-show="openSpecialiteMenu === specialite.id" 
+                       class="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-10">
+                    <button @click="editSpecialite(specialite)" 
+                            class="w-full text-left px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center">
+                      <i class="fa-solid fa-pen mr-2 text-sm"></i> Modifier
+                    </button>
+                    <button @click="viewDoctors(specialite)" 
+                            class="w-full text-left px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center">
+                      <i class="fa-solid fa-user-doctor mr-2 text-sm"></i> Voir médecins
+                    </button>
+                    <button @click="viewStatistics(specialite)" 
+                            class="w-full text-left px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center">
+                      <i class="fa-solid fa-chart-line mr-2 text-sm"></i> Statistiques
+                    </button>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="space-y-2 text-sm text-gray-600 dark:text-gray-400">
+                <div class="flex justify-between">
+                  <span>Médecins :</span>
+                  <span class="font-semibold" x-text="specialite.nbMedecins"></span>
+                </div>
+                <div class="flex justify-between">
+                  <span>Consultations/mois :</span>
+                  <span class="font-semibold" x-text="specialite.consultationsMois"></span>
+                </div>
+                <div class="flex justify-between">
+                  <span>Lits occupés :</span>
+                  <span class="font-semibold" x-text="specialite.litsOccupes + '/' + specialite.litsTotal"></span>
+                </div>
+              </div>
+              
+              <div class="mt-4 pt-3 border-t border-gray-200 dark:border-gray-700">
+                <div class="flex justify-between items-center">
+                  <span class="text-xs text-gray-500" x-text="'Dernière MAJ: ' + specialite.lastUpdate"></span>
+                  <div class="flex gap-1">
+                    <button @click="viewDetails(specialite)" 
+                            class="px-3 py-1 text-xs bg-primary-100 text-primary-700 rounded-lg hover:bg-primary-200 dark:bg-primary-900/40 dark:text-primary-200">
+                      Détails
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </template>
+        </div>
+      </section>
+
+      <!-- Liste détaillée -->
+      <section class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden mb-8">
+        <div class="border-b border-gray-200 dark:border-gray-700">
+          <nav class="flex -mb-px">
+            <button @click="activeView = 'list'" 
+                    :class="[
+                      'py-3 px-5 text-sm font-medium border-b-2 outline-none focus-visible:ring-2 focus-visible:ring-primary-500',
+                      activeView === 'list' ? 'border-primary-500 text-primary-600 dark:text-primary-300'
+                                         : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
+                    ]">
+              Liste détaillée
+            </button>
+            <button @click="activeView = 'doctors'" 
+                    :class="[
+                      'py-3 px-5 text-sm font-medium border-b-2 outline-none focus-visible:ring-2 focus-visible:ring-primary-500',
+                      activeView === 'doctors' ? 'border-primary-500 text-primary-600 dark:text-primary-300'
+                                            : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
+                    ]">
+              Médecins par spécialité
+            </button>
+          </nav>
+        </div>
+
+        <div class="p-6">
+          <!-- Vue Liste -->
+          <div x-show="activeView === 'list'">
+            <div class="overflow-x-auto">
+              <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead class="bg-gray-50 dark:bg-gray-700/50">
+                  <tr class="text-left text-xs font-semibold uppercase text-gray-500 dark:text-gray-300">
+                    <th class="px-4 py-3">Spécialité</th>
+                    <th class="px-4 py-3">Type</th>
+                    <th class="px-4 py-3">Chef de service</th>
+                    <th class="px-4 py-3">Médecins</th>
+                    <th class="px-4 py-3">Consultations/mois</th>
+                    <th class="px-4 py-3">Taux occupation</th>
+                    <th class="px-4 py-3">Actions</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                  <template x-for="specialite in filteredSpecialites" :key="specialite.id">
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/40">
+                      <td class="px-4 py-3">
+                        <div class="flex items-center">
+                          <div class="w-8 h-8 rounded-lg grid place-items-center mr-3"
+                               :class="{
+                                 'bg-blue-100 text-hospital-blue': specialite.type === 'medical',
+                                 'bg-emerald-100 text-hospital-emerald': specialite.type === 'surgical',
+                                 'bg-amber-100 text-hospital-amber': specialite.type === 'diagnostic'
+                               }">
+                            <i :class="specialite.icon"></i>
+                          </div>
+                          <span class="font-medium" x-text="specialite.nom"></span>
+                        </div>
+                      </td>
+                      <td class="px-4 py-3">
+                        <span class="px-2 py-1 text-xs rounded-full"
+                              :class="{
+                                'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200': specialite.type === 'medical',
+                                'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-200': specialite.type === 'surgical',
+                                'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200': specialite.type === 'diagnostic'
+                              }"
+                              x-text="specialite.type === 'medical' ? 'Médicale' : specialite.type === 'surgical' ? 'Chirurgicale' : 'Diagnostique'">
+                        </span>
+                      </td>
+                      <td class="px-4 py-3 text-sm" x-text="specialite.chefService"></td>
+                      <td class="px-4 py-3 text-sm" x-text="specialite.nbMedecins"></td>
+                      <td class="px-4 py-3 text-sm" x-text="specialite.consultationsMois"></td>
+                      <td class="px-4 py-3">
+                        <div class="flex items-center gap-2">
+                          <div class="w-16 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                            <div class="bg-hospital-teal h-2 rounded-full" 
+                                 :style="'width: ' + (specialite.litsOccupes / specialite.litsTotal * 100) + '%'"></div>
+                          </div>
+                          <span class="text-sm" x-text="Math.round(specialite.litsOccupes / specialite.litsTotal * 100) + '%'"></span>
+                        </div>
+                      </td>
+                      <td class="px-4 py-3">
+                        <div class="flex gap-2">
+                          <button @click="viewDetails(specialite)" 
+                                  class="p-2 rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700">
+                            <i class="fa-solid fa-eye"></i>
+                          </button>
+                          <button @click="editSpecialite(specialite)" 
+                                  class="p-2 rounded-lg bg-primary-600 hover:bg-primary-700 text-white">
+                            <i class="fa-solid fa-pen-to-square"></i>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  </template>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Vue Médecins -->
+          <div x-show="activeView === 'doctors'">
+            <div class="overflow-x-auto">
+              <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead class="bg-gray-50 dark:bg-gray-700/50">
+                  <tr class="text-left text-xs font-semibold uppercase text-gray-500 dark:text-gray-300">
+                    <th class="px-4 py-3">Médecin</th>
+                    <th class="px-4 py-3">Spécialité</th>
+                    <th class="px-4 py-3">Grade</th>
+                    <th class="px-4 py-3">Années exp.</th>
+                    <th class="px-4 py-3">Patients/mois</th>
+                    <th class="px-4 py-3">Disponibilité</th>
+                    <th class="px-4 py-3">Actions</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                  <template x-for="doctor in doctors" :key="doctor.id">
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/40">
+                      <td class="px-4 py-3">
+                        <div class="flex items-center">
+                          <img :src="doctor.avatar" class="w-8 h-8 rounded-full mr-3" :alt="doctor.nom"/>
+                          <div>
+                            <div class="font-medium" x-text="doctor.nom"></div>
+                            <div class="text-xs text-gray-500" x-text="doctor.matricule"></div>
+                          </div>
+                        </div>
+                      </td>
+                      <td class="px-4 py-3 text-sm" x-text="doctor.specialite"></td>
+                      <td class="px-4 py-3">
+                        <span class="px-2 py-1 text-xs rounded-full bg-primary-100 text-primary-800 dark:bg-primary-900/30 dark:text-primary-200"
+                              x-text="doctor.grade"></span>
+                      </td>
+                      <td class="px-4 py-3 text-sm" x-text="doctor.experience"></td>
+                      <td class="px-4 py-3 text-sm" x-text="doctor.patientsMois"></td>
+                      <td class="px-4 py-3">
+                        <span class="px-2 py-1 text-xs rounded-full"
+                              :class="{
+                                'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200': doctor.disponibilite === 'Disponible',
+                                'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-200': doctor.disponibilite === 'Partiel',
+                                'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200': doctor.disponibilite === 'Indisponible'
+                              }"
+                              x-text="doctor.disponibilite"></span>
+                      </td>
+                      <td class="px-4 py-3">
+                        <button class="p-2 rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700">
+                          <i class="fa-solid fa-calendar-plus"></i>
+                        </button>
+                      </td>
+                    </tr>
+                  </template>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Modal Ajout/Modification Spécialité -->
+  <div x-show="showAddSpecialiteModal" class="fixed inset-0 z-50 grid place-items-center p-4">
+    <div class="absolute inset-0 bg-black/50" @click="showAddSpecialiteModal = false" aria-hidden="true"></div>
+    <div class="relative w-full max-w-2xl bg-white dark:bg-gray-800 rounded-xl shadow-soft border border-gray-200 dark:border-gray-700 max-h-[90vh] overflow-y-auto">
+      <div class="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+        <h3 class="font-semibold" x-text="editingSpecialite ? 'Modifier la spécialité' : 'Nouvelle spécialité'"></h3>
+        <button class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700" @click="showAddSpecialiteModal = false" aria-label="Fermer">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div class="p-4">
+        <form @submit.prevent="saveSpecialite()" class="space-y-4">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium mb-2">Nom de la spécialité</label>
+              <input type="text" x-model="formSpecialite.nom" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700" required>
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-2">Type</label>
+              <select x-model="formSpecialite.type" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700" required>
+                <option value="medical">Médicale</option>
+                <option value="surgical">Chirurgicale</option>
+                <option value="diagnostic">Diagnostique</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-2">Description</label>
+            <textarea x-model="formSpecialite.description" rows="3" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700"></textarea>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label class="block text-sm font-medium mb-2">Nombre de lits total</label>
+              <input type="number" x-model="formSpecialite.litsTotal" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700">
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-2">Lits occupés</label>
+              <input type="number" x-model="formSpecialite.litsOccupes" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700">
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-2">Chef de service</label>
+              <input type="text" x-model="formSpecialite.chefService" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700">
+            </div>
+          </div>
+          <div class="flex justify-end gap-2 pt-4">
+            <button type="button" class="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600" @click="showAddSpecialiteModal = false">Annuler</button>
+            <button type="submit" class="px-4 py-2 rounded-lg bg-hospital-blue text-white hover:bg-blue-700">
+              <span x-text="editingSpecialite ? 'Modifier' : 'Créer'"></span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function specialitesApp() {
+    return {
+      // ==== UI State ====
+      darkMode: false,
+      searchQuery: '',
+      activeFilter: 'all',
+      activeView: 'list',
+      openSpecialiteMenu: null,
+      showAddSpecialiteModal: false,
+      editingSpecialite: null,
+      
+      // Form data
+      formSpecialite: {
+        nom: '',
+        type: 'medical',
+        description: '',
+        litsTotal: 0,
+        litsOccupes: 0,
+        chefService: ''
+      },
+      
+      // Statistics
+      stats: {
+        total: 0,
+        totalDoctors: 0,
+        totalConsultations: 0,
+        occupationRate: 0
+      },
+      
+      // Data
+      specialites: [
+        {
+          id: 1,
+          nom: 'Cardiologie',
+          type: 'medical',
+          icon: 'fa-solid fa-heart-pulse',
+          nbMedecins: 8,
+          consultationsMois: 450,
+          litsTotal: 25,
+          litsOccupes: 22,
+          chefService: 'Dr. Sophie Martin',
+          description: 'Spécialité médicale dédiée aux maladies du cœur et des vaisseaux sanguins.',
+          lastUpdate: '15/03/2024'
+        },
+        {
+          id: 2,
+          nom: 'Chirurgie Générale',
+          type: 'surgical',
+          icon: 'fa-solid fa-scissors',
+          nbMedecins: 12,
+          consultationsMois: 320,
+          litsTotal: 40,
+          litsOccupes: 35,
+          chefService: 'Dr. Pierre Dubois',
+          description: 'Chirurgie des affections de l\'abdomen, du système digestif et des glandes endocrines.',
+          lastUpdate: '12/03/2024'
+        },
+        {
+          id: 3,
+          nom: 'Radiologie',
+          type: 'diagnostic',
+          icon: 'fa-solid fa-camera',
+          nbMedecins: 6,
+          consultationsMois: 890,
+          litsTotal: 0,
+          litsOccupes: 0,
+          chefService: 'Dr. Marie Laurent',
+          description: 'Imagerie médicale et diagnostic par les rayonnements.',
+          lastUpdate: '14/03/2024'
+        },
+        {
+          id: 4,
+          nom: 'Pédiatrie',
+          type: 'medical',
+          icon: 'fa-solid fa-baby',
+          nbMedecins: 10,
+          consultationsMois: 680,
+          litsTotal: 35,
+          litsOccupes: 28,
+          chefService: 'Dr. Claire Bernard',
+          description: 'Médecine des enfants de la naissance à la puberté.',
+          lastUpdate: '10/03/2024'
+        },
+        {
+          id: 5,
+          nom: 'Neurologie',
+          type: 'medical',
+          icon: 'fa-solid fa-brain',
+          nbMedecins: 7,
+          consultationsMois: 290,
+          litsTotal: 20,
+          litsOccupes: 18,
+          chefService: 'Dr. Antoine Petit',
+          description: 'Spécialité des maladies du système nerveux.',
+          lastUpdate: '16/03/2024'
+        },
+        {
+          id: 6,
+          nom: 'Orthopédie',
+          type: 'surgical',
+          icon: 'fa-solid fa-bone',
+          nbMedecins: 9,
+          consultationsMois: 410,
+          litsTotal: 30,
+          litsOccupes: 25,
+          chefService: 'Dr. Jean Moreau',
+          description: 'Chirurgie de l\'appareil locomoteur (os, articulations, muscles).',
+          lastUpdate: '11/03/2024'
+        }
+      ],
+      
+      doctors: [
+        {
+          id: 1,
+          nom: 'Dr. Sophie Martin',
+          specialite: 'Cardiologie',
+          grade: 'Praticien',
+          experience: 15,
+          patientsMois: 120,
+          disponibilite: 'Disponible',
+          avatar: 'https://randomuser.me/api/portraits/women/68.jpg',
+          matricule: 'MED-4582'
+        },
+        {
+          id: 2,
+          nom: 'Dr. Pierre Dubois',
+          specialite: 'Chirurgie Générale',
+          grade: 'Chef de service',
+          experience: 22,
+          patientsMois: 85,
+          disponibilite: 'Partiel',
+          avatar: 'https://randomuser.me/api/portraits/men/32.jpg',
+          matricule: 'MED-3291'
+        },
+        {
+          id: 3,
+          nom: 'Dr. Marie Laurent',
+          specialite: 'Radiologie',
+          grade: 'Praticien',
+          experience: 8,
+          patientsMois: 210,
+          disponibilite: 'Disponible',
+          avatar: 'https://randomuser.me/api/portraits/women/44.jpg',
+          matricule: 'MED-7741'
+        }
+      ],
+      
+      // Computed
+      get filteredSpecialites() {
+        let filtered = this.specialites;
+        
+        // Filter by search query
+        if (this.searchQuery) {
+          filtered = filtered.filter(s => 
+            s.nom.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
+            s.description.toLowerCase().includes(this.searchQuery.toLowerCase())
+          );
+        }
+        
+        // Filter by type
+        if (this.activeFilter !== 'all') {
+          filtered = filtered.filter(s => s.type === this.activeFilter);
+        }
+        
+        return filtered;
+      },
+      
+      // Methods
+      toggleDarkMode() {
+        this.darkMode = !this.darkMode;
+        document.documentElement.classList.toggle('dark', this.darkMode);
+      },
+      
+      setFilter(filter) {
+        this.activeFilter = filter;
+      },
+      
+      toggleSpecialiteMenu(id) {
+        this.openSpecialiteMenu = this.openSpecialiteMenu === id ? null : id;
+      },
+      
+      viewDetails(specialite) {
+        console.log('Voir détails:', specialite);
+        // Navigation vers la page de détails
+      },
+      
+      editSpecialite(specialite) {
+        this.editingSpecialite = specialite;
+        this.formSpecialite = { ...specialite };
+        this.showAddSpecialiteModal = true;
+      },
+      
+      viewDoctors(specialite) {
+        console.log('Voir médecins de:', specialite.nom);
+        this.activeView = 'doctors';
+      },
+      
+      viewStatistics(specialite) {
+        console.log('Voir statistiques de:', specialite.nom);
+      },
+      
+      saveSpecialite() {
+        if (this.editingSpecialite) {
+          // Update existing specialite
+          const index = this.specialites.findIndex(s => s.id === this.editingSpecialite.id);
+          if (index !== -1) {
+            this.specialites[index] = { ...this.formSpecialite, id: this.editingSpecialite.id };
+          }
+        } else {
+          // Add new specialite
+          const newId = Math.max(...this.specialites.map(s => s.id)) + 1;
+          this.specialites.push({
+            ...this.formSpecialite,
+            id: newId,
+            lastUpdate: new Date().toLocaleDateString('fr-FR')
+          });
+        }
+        
+        this.showAddSpecialiteModal = false;
+        this.resetForm();
+        this.updateStats();
+      },
+      
+      resetForm() {
+        this.formSpecialite = {
+          nom: '',
+          type: 'medical',
+          description: '',
+          litsTotal: 0,
+          litsOccupes: 0,
+          chefService: ''
+        };
+        this.editingSpecialite = null;
+      },
+      
+      updateStats() {
+        this.stats.total = this.specialites.length;
+        this.stats.totalDoctors = this.specialites.reduce((sum, s) => sum + s.nbMedecins, 0);
+        this.stats.totalConsultations = this.specialites.reduce((sum, s) => sum + s.consultationsMois, 0);
+        
+        const totalLits = this.specialites.reduce((sum, s) => sum + s.litsTotal, 0);
+        const occupiedLits = this.specialites.reduce((sum, s) => sum + s.litsOccupes, 0);
+        this.stats.occupationRate = totalLits > 0 ? Math.round((occupiedLits / totalLits) * 100) : 0;
+      },
+      
+      closeOverlays() {
+        this.showAddSpecialiteModal = false;
+        this.openSpecialiteMenu = null;
+      },
+      
+      init() {
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+          this.darkMode = true;
+        }
+        document.documentElement.classList.toggle('dark', this.darkMode);
+        this.updateStats();
+      }
+    }
+  }
+</script>
+</body>
+</html>

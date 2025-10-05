@@ -3,7 +3,7 @@ from pathlib import Path
 from datetime import timedelta
 from urllib.parse import urlparse
 
-BASE_DIR = Path(__file__).resolve().parent.parent  # .../sigh
+BASE_DIR = Path(__file__).resolve().parent.parent.parent  # .../sigh
 ENV = os.environ.get
 
 # -----------------------
@@ -28,6 +28,7 @@ INSTALLED_APPS = [
 
     # GeoDjango
     "django.contrib.gis",
+    "import_export",
 
     # Tiers
     "corsheaders",
@@ -73,11 +74,14 @@ TEMPLATES = [
         "DIRS": [BASE_DIR / "templates"],
         "APP_DIRS": True,
         "OPTIONS": {
+
             "context_processors": [
                 "django.template.context_processors.debug",
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "hospital.context_processors.user_profile",
+
             ],
         },
     },
@@ -169,16 +173,16 @@ SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=int(ENV("JWT_ACCESS_MIN", "30"))),
 }
 # SimpleJWT (si tu vérifies localement la clé publique)
-# SIMPLE_JWT = {
-#     "ALGORITHM": "RS256",
-#     "SIGNING_KEY": None,  # on vérifie via la clé publique
-#     "VERIFYING_KEY": ENV("JWT_VERIFYING_KEY", ""),  # colle la PEM publique si tu ne fais pas JWKS
-#     "AUDIENCE": ENV("OIDC_AUDIENCE", "sih-api"),
-#     "ISSUER": ENV("OIDC_ISSUER", "https://sso.example.ci/realms/sih"),
-#     "AUTH_HEADER_TYPES": ("Bearer",),
-#     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=int(ENV("JWT_ACCESS_MIN", "30"))),
-#     "USER_ID_CLAIM": "sub",
-# }
+SIMPLE_JWT = {
+    "ALGORITHM": "RS256",
+    "SIGNING_KEY": None,  # on vérifie via la clé publique
+    "VERIFYING_KEY": ENV("JWT_VERIFYING_KEY", ""),  # colle la PEM publique si tu ne fais pas JWKS
+    "AUDIENCE": ENV("OIDC_AUDIENCE", "sih-api"),
+    "ISSUER": ENV("OIDC_ISSUER", "https://sso.example.ci/realms/sih"),
+    "AUTH_HEADER_TYPES": ("Bearer",),
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=int(ENV("JWT_ACCESS_MIN", "30"))),
+    "USER_ID_CLAIM": "sub",
+}
 
 
 # -----------------------
@@ -214,41 +218,7 @@ EMAIL_USE_TLS = ENV("EMAIL_USE_TLS", "False").lower() == "true"
 DEFAULT_FROM_EMAIL = ENV("DEFAULT_FROM_EMAIL", "no-reply@sigh.local")
 
 # -----------------------
-#  Logging
-# -----------------------
-# LOG_LEVEL = ENV("DJANGO_LOG_LEVEL", "INFO")
-
-# LOGGING = {
-#     "version": 1,
-#     "disable_existing_loggers": False,
-#     "formatters": {
-#         "simple": {"format": "[%(levelname)s] %(name)s: %(message)s"},
-#         "verbose": {
-#             "format": "%(asctime)s %(levelname)s %(name)s %(process)d %(thread)d %(message)s"
-#         },
-#     },
-#     "handlers": {
-#         "console": {
-#             "class": "logging.StreamHandler",
-#             "formatter": "simple",
-#         },
-#     },
-#     "loggers": {
-#         "django": {"handlers": ["console"], "level": LOG_LEVEL},
-#         "django.request": {"handlers": ["console"], "level": "WARNING", "propagate": False},
-#         "django.db.backends": {
-#             "handlers": ["console"],
-#             "level": ENV("DJANGO_DB_LOG_LEVEL", "WARNING"),
-#         },
-#     },
-# }
-
-# -----------------------
 #  Sécurité (base)
 # -----------------------
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")  # si derrière Traefik/Nginx
 X_FRAME_OPTIONS = "DENY"
-
-# DATABASES["default"]["CONN_MAX_AGE"] = 0           # important via PgBouncer (transaction)
-# DATABASES["default"]["OPTIONS"]["sslmode"] = "prefer"
-# DATABASES["default"]["OPTIONS"]["application_name"] = "sigh"

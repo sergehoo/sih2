@@ -3,6 +3,8 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 
+from hospital.views import HomeView
+
 urlpatterns = [
                   path('apis/', include('api.urls')),
                   path('api-auth/', include('rest_framework.urls')),
@@ -12,6 +14,8 @@ urlpatterns = [
                   path('laboratory/route/', include('laboratory.api.urls')),
                   path('logistic/route/', include('logistic.api.urls')),
                   path('pharmacy/route/', include('pharmacy.api.urls')),
+
+                  path('', HomeView.as_view(), name="homeview"),
 
                   path('admin/', admin.site.urls),
               ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

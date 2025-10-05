@@ -1,0 +1,27 @@
+  <!-- ===== Modal ===== -->
+  <div x-show="showModal" class="fixed inset-0 z-50 grid place-items-center p-4">
+    <div class="absolute inset-0 bg-black/50" @click="showModal=false" aria-hidden="true"></div>
+    <div class="relative w-full max-w-lg bg-white dark:bg-gray-800 rounded-xl shadow-soft border border-gray-200 dark:border-gray-700">
+      <div class="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+        <h3 class="font-semibold">Confirmation requise</h3>
+        <button class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700" @click="showModal=false" aria-label="Fermer">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div class="p-4">
+        <div class="flex items-start gap-3">
+          <div class="w-10 h-10 grid place-items-center rounded-full bg-primary-100 dark:bg-primary-900/40 text-primary-700 dark:text-primary-200">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+          </div>
+          <div>
+            <p class="text-sm text-gray-700 dark:text-gray-300">Êtes-vous sûr de vouloir effectuer cette
+              action ? Cette opération est irréversible.</p>
+          </div>
+        </div>
+        <div class="mt-5 flex justify-end gap-2">
+          <button class="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600" @click="showModal=false">Annuler</button>
+          <button class="px-4 py-2 rounded-lg bg-hospital-rose text-white hover:bg-rose-700" @click="confirmAction()">Confirmer</button>
+        </div>
+      </div>
+    </div>
+  </div>

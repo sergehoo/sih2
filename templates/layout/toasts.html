@@ -1,0 +1,27 @@
+  <!-- ===== Toasts ===== -->
+  <div class="fixed bottom-4 right-4 space-y-3 z-50">
+    <div class="max-w-sm w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-soft overflow-hidden">
+      <div class="p-4 flex items-start gap-3">
+        <i class="fa-solid fa-circle-check text-lg mt-0.5 text-hospital-emerald"></i>
+        <div class="flex-1">
+          <p class="text-sm font-semibold">Succès</p>
+          <p class="text-sm text-gray-600 dark:text-gray-300">Connexion réussie à CHU - MSHPCMU National</p>
+        </div>
+        <button class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700" @click="removeToast(1)" aria-label="Fermer">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+    </div>
+    <div class="max-w-sm w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-soft overflow-hidden">
+      <div class="p-4 flex items-start gap-3">
+        <i class="fa-solid fa-circle-info text-lg mt-0.5 text-hospital-blue"></i>
+        <div class="flex-1">
+          <p class="text-sm font-semibold">Information</p>
+          <p class="text-sm text-gray-600 dark:text-gray-300">Mise à jour des indicateurs</p>
+        </div>
+        <button class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700" @click="removeToast(2)" aria-label="Fermer">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+    </div>
+  </div>

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fr" class="h-full">
+<html lang="fr" class="h-full" x-data="hospitalApp()" x-init="init()">
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
@@ -7,9 +7,9 @@
 
   <!-- Tailwind -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Vue 3 -->
-  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-  <!-- Font Awesome (Free) -->
+  <!-- Alpine.js -->
+  <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+  <!-- Font Awesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
 
   <script>
@@ -63,7 +63,7 @@
     .card-hover { transition: transform .2s ease, box-shadow .2s ease; }
     .card-hover:hover { transform: translateY(-2px); box-shadow: 0 10px 25px -5px rgba(0,0,0,.08), 0 10px 10px -5px rgba(0,0,0,.04); }
 
-    /* Transitions Vue */
+    /* Transitions */
     .fade-enter-active, .fade-leave-active { transition: opacity .25s ease; }
     .fade-enter-from, .fade-leave-to { opacity: 0; }
     .slide-enter-active, .slide-leave-active { transition: transform .3s ease; }
@@ -86,7 +86,7 @@
 </head>
 
 <body class="h-full bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-100 transition-colors duration-300">
-<div id="app" class="h-full flex" @keyup.esc="closeOverlays" tabindex="0">
+<div id="app" class="h-full flex" @keyup.escape="closeOverlays()" tabindex="0">
 
   <!-- ===== Sidebar ===== -->
   <aside
@@ -102,13 +102,13 @@
         <div class="w-10 h-10 grid place-items-center rounded-xl bg-white/10 text-white shadow-soft">
           <i class="fa-solid fa-hospital"></i>
         </div>
-        <div v-if="!sidebarCollapsed" class="ml-3 overflow-hidden">
+        <div x-show="!sidebarCollapsed" class="ml-3 overflow-hidden">
           <h1 class="text-lg font-bold leading-tight text-white">CHU - MSHPCMU</h1>
           <p class="text-xs text-primary-100">Plateforme Nationale</p>
         </div>
       </div>
       <button
-        @click="toggleSidebar"
+        @click="toggleSidebar()"
         class="p-2 rounded-lg text-white/90 hover:bg-white/10"
         aria-label="Basculer la sidebar"
       >
@@ -118,8 +118,8 @@
 
     <!-- Corps -->
     <nav class="flex-1 overflow-y-auto custom-scrollbar bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-gray-800">
-      <!-- Carte “User Quick Info” -->
-      <div v-if="!sidebarCollapsed" class="px-4 pt-4">
+      <!-- Carte "User Quick Info" -->
+      <div x-show="!sidebarCollapsed" class="px-4 pt-4">
         <div class="bg-white dark:bg-gray-900 rounded-xl shadow-sm p-4 border-l-4 border-hospital-blue">
           <div class="flex items-center">
             <div class="bg-hospital-blue/10 text-hospital-blue rounded-full w-12 h-12 grid place-items-center mr-3">
@@ -127,10 +127,10 @@
             </div>
             <div class="min-w-0">
               <p class="text-sm font-medium text-gray-900 dark:text-white truncate">
-                {{ currentUser.name }}
+                Dr. Sophie Martin (Cardiologue)
               </p>
               <p class="text-xs text-gray-500 dark:text-gray-400 truncate">
-                {{ currentUser.role }}
+                Cardiologue
               </p>
             </div>
           </div>
@@ -139,164 +139,479 @@
 
       <!-- Menu par sections -->
       <ul class="px-2 py-4 space-y-6">
-        <li v-for="section in menuSections" :key="section.id">
-          <!-- Titre de section -->
-          <h6
-            class="px-3 mb-2 text-[11px] font-semibold uppercase tracking-wider
-                   text-hospital-blue dark:text-primary-200"
-            v-if="!sidebarCollapsed"
-          >
-            {{ section.title }}
+        <!-- Section Générale -->
+        <li>
+          <h6 x-show="!sidebarCollapsed" class="px-3 mb-2 text-[11px] font-semibold uppercase tracking-wider text-hospital-blue dark:text-primary-200">
+            Générale
           </h6>
-
-          <!-- Items -->
           <ul class="space-y-1">
-            <li v-for="item in section.items" :key="item.id" class="relative">
-              <!-- Item simple -->
-              <template v-if="!item.children || item.children.length === 0">
-                <a
-                  :href="item.link || '#'"
-                  :class="[
-                    'group relative flex items-center rounded-xl px-3 py-2 transition-all',
-                    'hover:bg-primary-50 dark:hover:bg-primary-900/30 hover:shadow-sm',
-                    'border-l-4',
-                    item.active
-                      ? 'bg-primary-50 dark:bg-primary-900/40 border-primary-500 text-primary-700 dark:text-primary-200'
-                      : 'border-transparent text-gray-700 dark:text-gray-300'
-                  ]"
-                  @mouseenter="showTooltip = sidebarCollapsed ? item.id : null"
-                  @mouseleave="showTooltip = null"
-                  @click.prevent="activate(item)"
-                >
-                  <span
-                    class="w-8 h-8 rounded-lg grid place-items-center shrink-0
-                           bg-gray-100 text-gray-600 group-hover:bg-primary-100 group-hover:text-primary-700
-                           dark:bg-gray-700 dark:text-gray-300 dark:group-hover:bg-primary-800 dark:group-hover:text-primary-200"
-                  >
-                    <i :class="item.icon"></i>
+            <li class="relative">
+              <a href="#" class="group relative flex items-center rounded-xl px-3 py-2 transition-all hover:bg-primary-50 dark:hover:bg-primary-900/30 hover:shadow-sm border-l-4 border-primary-500 bg-primary-50 dark:bg-primary-900/40 text-primary-700 dark:text-primary-200">
+                <span class="w-8 h-8 rounded-lg grid place-items-center shrink-0 bg-gray-100 text-gray-600 group-hover:bg-primary-100 group-hover:text-primary-700 dark:bg-gray-700 dark:text-gray-300 dark:group-hover:bg-primary-800 dark:group-hover:text-primary-200">
+                  <i class="fa-solid fa-gauge-high"></i>
+                </span>
+                <span x-show="!sidebarCollapsed" class="ml-3 font-medium truncate">Tableau de bord</span>
+                <div x-show="!sidebarCollapsed" class="absolute right-3 top-1/2 -translate-y-1/2">
+                  <span class="text-xs font-medium px-2 py-0.5 rounded-full bg-hospital-blue/10 text-hospital-blue">42</span>
+                </div>
+              </a>
+            </li>
+            <li class="relative">
+              <a href="#" class="group relative flex items-center rounded-xl px-3 py-2 transition-all hover:bg-primary-50 dark:hover:bg-primary-900/30 hover:shadow-sm border-l-4 border-transparent text-gray-700 dark:text-gray-300">
+                <span class="w-8 h-8 rounded-lg grid place-items-center shrink-0 bg-gray-100 text-gray-600 group-hover:bg-primary-100 group-hover:text-primary-700 dark:bg-gray-700 dark:text-gray-300 dark:group-hover:bg-primary-800 dark:group-hover:text-primary-200">
+                  <i class="fa-solid fa-magnifying-glass"></i>
+                </span>
+                <span x-show="!sidebarCollapsed" class="ml-3 font-medium truncate">Recherche globale</span>
+              </a>
+            </li>
+          </ul>
+        </li>
+
+        <!-- Section Accueil -->
+        <li>
+          <h6 x-show="!sidebarCollapsed" class="px-3 mb-2 text-[11px] font-semibold uppercase tracking-wider text-hospital-blue dark:text-primary-200">
+            Accueil
+          </h6>
+          <ul class="space-y-1">
+            <li class="relative">
+              <a href="#" class="group relative flex items-center rounded-xl px-3 py-2 transition-all hover:bg-primary-50 dark:hover:bg-primary-900/30 hover:shadow-sm border-l-4 border-transparent text-gray-700 dark:text-gray-300">
+                <span class="w-8 h-8 rounded-lg grid place-items-center shrink-0 bg-gray-100 text-gray-600 group-hover:bg-primary-100 group-hover:text-primary-700 dark:bg-gray-700 dark:text-gray-300 dark:group-hover:bg-primary-800 dark:group-hover:text-primary-200">
+                  <i class="fa-solid fa-users"></i>
+                </span>
+                <span x-show="!sidebarCollapsed" class="ml-3 font-medium truncate">Salle d'attente</span>
+                <div x-show="!sidebarCollapsed" class="absolute right-3 top-1/2 -translate-y-1/2">
+                  <span class="text-xs font-medium px-2 py-0.5 rounded-full bg-red-100 text-red-600">12</span>
+                </div>
+              </a>
+            </li>
+            <li class="relative">
+              <a href="#" class="group relative flex items-center rounded-xl px-3 py-2 transition-all hover:bg-primary-50 dark:hover:bg-primary-900/30 hover:shadow-sm border-l-4 border-transparent text-gray-700 dark:text-gray-300">
+                <span class="w-8 h-8 rounded-lg grid place-items-center shrink-0 bg-gray-100 text-gray-600 group-hover:bg-primary-100 group-hover:text-primary-700 dark:bg-gray-700 dark:text-gray-300 dark:group-hover:bg-primary-800 dark:group-hover:text-primary-200">
+                  <i class="fa-solid fa-calendar-check"></i>
+                </span>
+                <span x-show="!sidebarCollapsed" class="ml-3 font-medium truncate">Patients reçus</span>
+                <div x-show="!sidebarCollapsed" class="absolute right-3 top-1/2 -translate-y-1/2">
+                  <span class="text-xs font-medium px-2 py-0.5 rounded-full bg-green-100 text-green-600">87</span>
+                </div>
+              </a>
+            </li>
+            <li class="relative">
+              <a href="#" class="group relative flex items-center rounded-xl px-3 py-2 transition-all hover:bg-primary-50 dark:hover:bg-primary-900/30 hover:shadow-sm border-l-4 border-transparent text-gray-700 dark:text-gray-300">
+                <span class="w-8 h-8 rounded-lg grid place-items-center shrink-0 bg-gray-100 text-gray-600 group-hover:bg-primary-100 group-hover:text-primary-700 dark:bg-gray-700 dark:text-gray-300 dark:group-hover:bg-primary-800 dark:group-hover:text-primary-200">
+                  <i class="fa-solid fa-calendar-days"></i>
+                </span>
+                <span x-show="!sidebarCollapsed" class="ml-3 font-medium truncate">Rendez-vous</span>
+              </a>
+            </li>
+          </ul>
+        </li>
+
+        <!-- Section Consultation -->
+        <li>
+          <h6 x-show="!sidebarCollapsed" class="px-3 mb-2 text-[11px] font-semibold uppercase tracking-wider text-hospital-blue dark:text-primary-200">
+            Consultation
+          </h6>
+          <ul class="space-y-1">
+            <li class="relative">
+              <a href="#" class="group relative flex items-center rounded-xl px-3 py-2 transition-all hover:bg-primary-50 dark:hover:bg-primary-900/30 hover:shadow-sm border-l-4 border-transparent text-gray-700 dark:text-gray-300">
+                <span class="w-8 h-8 rounded-lg grid place-items-center shrink-0 bg-gray-100 text-gray-600 group-hover:bg-primary-100 group-hover:text-primary-700 dark:bg-gray-700 dark:text-gray-300 dark:group-hover:bg-primary-800 dark:group-hover:text-primary-200">
+                  <i class="fa-solid fa-stethoscope"></i>
+                </span>
+                <span x-show="!sidebarCollapsed" class="ml-3 font-medium truncate">Liste Consultations</span>
+                <div x-show="!sidebarCollapsed" class="absolute right-3 top-1/2 -translate-y-1/2">
+                  <span class="text-xs font-medium px-2 py-0.5 rounded-full bg-blue-100 text-blue-600">24</span>
+                </div>
+              </a>
+            </li>
+          </ul>
+        </li>
+
+        <!-- Section Urgences -->
+        <li>
+          <h6 x-show="!sidebarCollapsed" class="px-3 mb-2 text-[11px] font-semibold uppercase tracking-wider text-hospital-blue dark:text-primary-200">
+            Urgences
+          </h6>
+          <ul class="space-y-1">
+            <li class="relative">
+              <a href="#" class="group relative flex items-center rounded-xl px-3 py-2 transition-all hover:bg-primary-50 dark:hover:bg-primary-900/30 hover:shadow-sm border-l-4 border-transparent text-gray-700 dark:text-gray-300">
+                <span class="w-8 h-8 rounded-lg grid place-items-center shrink-0 bg-gray-100 text-gray-600 group-hover:bg-primary-100 group-hover:text-primary-700 dark:bg-gray-700 dark:text-gray-300 dark:group-hover:bg-primary-800 dark:group-hover:text-primary-200">
+                  <i class="fa-solid fa-truck-medical"></i>
+                </span>
+                <span x-show="!sidebarCollapsed" class="ml-3 font-medium truncate">Liste des Urgences</span>
+                <div x-show="!sidebarCollapsed" class="absolute right-3 top-1/2 -translate-y-1/2">
+                  <span class="text-xs font-medium px-2 py-0.5 rounded-full bg-red-100 text-red-600">5</span>
+                </div>
+              </a>
+            </li>
+          </ul>
+        </li>
+
+        <!-- Section Hospitalisation -->
+        <li>
+          <h6 x-show="!sidebarCollapsed" class="px-3 mb-2 text-[11px] font-semibold uppercase tracking-wider text-hospital-blue dark:text-primary-200">
+            Hospitalisation
+          </h6>
+          <ul class="space-y-1">
+            <li class="relative">
+              <a href="#" class="group relative flex items-center rounded-xl px-3 py-2 transition-all hover:bg-primary-50 dark:hover:bg-primary-900/30 hover:shadow-sm border-l-4 border-transparent text-gray-700 dark:text-gray-300">
+                <span class="w-8 h-8 rounded-lg grid place-items-center shrink-0 bg-gray-100 text-gray-600 group-hover:bg-primary-100 group-hover:text-primary-700 dark:bg-gray-700 dark:text-gray-300 dark:group-hover:bg-primary-800 dark:group-hover:text-primary-200">
+                  <i class="fa-solid fa-bed-pulse"></i>
+                </span>
+                <span x-show="!sidebarCollapsed" class="ml-3 font-medium truncate">Hospitalisations en cours</span>
+                <div x-show="!sidebarCollapsed" class="absolute right-3 top-1/2 -translate-y-1/2">
+                  <span class="text-xs font-medium px-2 py-0.5 rounded-full bg-red-100 text-red-600">18</span>
+                </div>
+              </a>
+            </li>
+            <li class="relative">
+              <a href="#" class="group relative flex items-center rounded-xl px-3 py-2 transition-all hover:bg-primary-50 dark:hover:bg-primary-900/30 hover:shadow-sm border-l-4 border-transparent text-gray-700 dark:text-gray-300">
+                <span class="w-8 h-8 rounded-lg grid place-items-center shrink-0 bg-gray-100 text-gray-600 group-hover:bg-primary-100 group-hover:text-primary-700 dark:bg-gray-700 dark:text-gray-300 dark:group-hover:bg-primary-800 dark:group-hover:text-primary-200">
+                  <i class="fa-solid fa-clock-rotate-left"></i>
+                </span>
+                <span x-show="!sidebarCollapsed" class="ml-3 font-medium truncate">Suivi soins</span>
+              </a>
+            </li>
+            <li class="relative">
+              <a href="#" class="group relative flex items-center rounded-xl px-3 py-2 transition-all hover:bg-primary-50 dark:hover:bg-primary-900/30 hover:shadow-sm border-l-4 border-transparent text-gray-700 dark:text-gray-300">
+                <span class="w-8 h-8 rounded-lg grid place-items-center shrink-0 bg-gray-100 text-gray-600 group-hover:bg-primary-100 group-hover:text-primary-700 dark:bg-gray-700 dark:text-gray-300 dark:group-hover:bg-primary-800 dark:group-hover:text-primary-200">
+                  <i class="fa-solid fa-bed"></i>
+                </span>
+                <span x-show="!sidebarCollapsed" class="ml-3 font-medium truncate">Patients hospitalisés</span>
+                <div x-show="!sidebarCollapsed" class="absolute right-3 top-1/2 -translate-y-1/2">
+                  <span class="text-xs font-medium px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-600">64</span>
+                </div>
+              </a>
+            </li>
+            <li class="relative">
+              <a href="#" class="group relative flex items-center rounded-xl px-3 py-2 transition-all hover:bg-primary-50 dark:hover:bg-primary-900/30 hover:shadow-sm border-l-4 border-transparent text-gray-700 dark:text-gray-300">
+                <span class="w-8 h-8 rounded-lg grid place-items-center shrink-0 bg-gray-100 text-gray-600 group-hover:bg-primary-100 group-hover:text-primary-700 dark:bg-gray-700 dark:text-gray-300 dark:group-hover:bg-primary-800 dark:group-hover:text-primary-200">
+                  <i class="fa-solid fa-hospital-user"></i>
+                </span>
+                <span x-show="!sidebarCollapsed" class="ml-3 font-medium truncate">Unités d'hospitalisation</span>
+              </a>
+            </li>
+          </ul>
+        </li>
+
+        <!-- Section Suivi Patients -->
+        <li>
+          <h6 x-show="!sidebarCollapsed" class="px-3 mb-2 text-[11px] font-semibold uppercase tracking-wider text-hospital-blue dark:text-primary-200">
+            Suivi Patients
+          </h6>
+          <ul class="space-y-1">
+            <li class="relative">
+              <a href="#" class="group relative flex items-center rounded-xl px-3 py-2 transition-all hover:bg-primary-50 dark:hover:bg-primary-900/30 hover:shadow-sm border-l-4 border-transparent text-gray-700 dark:text-gray-300">
+                <span class="w-8 h-8 rounded-lg grid place-items-center shrink-0 bg-gray-100 text-gray-600 group-hover:bg-primary-100 group-hover:text-primary-700 dark:bg-gray-700 dark:text-gray-300 dark:group-hover:bg-primary-800 dark:group-hover:text-primary-200">
+                  <i class="fa-solid fa-file-arrow-up"></i>
+                </span>
+                <span x-show="!sidebarCollapsed" class="ml-3 font-medium truncate">Bilans Initiaux</span>
+                <div x-show="!sidebarCollapsed" class="absolute right-3 top-1/2 -translate-y-1/2">
+                  <span class="text-xs font-medium px-2 py-0.5 rounded-full bg-amber-100 text-amber-600">9</span>
+                </div>
+              </a>
+            </li>
+            <li class="relative">
+              <a href="#" class="group relative flex items-center rounded-xl px-3 py-2 transition-all hover:bg-primary-50 dark:hover:bg-primary-900/30 hover:shadow-sm border-l-4 border-transparent text-gray-700 dark:text-gray-300">
+                <span class="w-8 h-8 rounded-lg grid place-items-center shrink-0 bg-gray-100 text-gray-600 group-hover:bg-primary-100 group-hover:text-primary-700 dark:bg-gray-700 dark:text-gray-300 dark:group-hover:bg-primary-800 dark:group-hover:text-primary-200">
+                  <i class="fa-solid fa-folder-tree"></i>
+                </span>
+                <span x-show="!sidebarCollapsed" class="ml-3 font-medium truncate">Suivi des Patients</span>
+                <div x-show="!sidebarCollapsed" class="absolute right-3 top-1/2 -translate-y-1/2">
+                  <span class="text-xs font-medium px-2 py-0.5 rounded-full bg-red-100 text-red-600">4</span>
+                </div>
+              </a>
+            </li>
+          </ul>
+        </li>
+
+        <!-- Section Maladies sous surveillance -->
+        <li>
+          <h6 x-show="!sidebarCollapsed" class="px-3 mb-2 text-[11px] font-semibold uppercase tracking-wider text-hospital-blue dark:text-primary-200">
+            Maladies sous surveillance
+          </h6>
+          <ul class="space-y-1">
+            <li class="relative">
+              <button type="button" @click="toggleSub('diseases')" class="group w-full relative flex items-center justify-between rounded-xl px-3 py-2 transition-all hover:bg-primary-50 dark:hover:bg-primary-900/30 hover:shadow-sm border-l-4 border-primary-500 text-primary-700 dark:text-primary-200">
+                <div class="flex items-center min-w-0">
+                  <span class="w-8 h-8 rounded-lg grid place-items-center shrink-0 bg-rose-100 text-rose-600 group-hover:bg-rose-200 group-hover:text-rose-700 dark:bg-rose-900/30 dark:text-rose-300">
+                    <i class="fa-solid fa-virus"></i>
                   </span>
+                  <span x-show="!sidebarCollapsed" class="ml-3 font-medium truncate">Pathologies</span>
+                </div>
+                <em x-show="!sidebarCollapsed" class="fa-solid text-xs transition-transform fa-chevron-down text-gray-400 group-hover:text-primary-600"></em>
+              </button>
+              <ul x-show="isOpen('diseases') && !sidebarCollapsed" class="mt-1 ml-4 pl-2 border-l-2 border-gray-200 dark:border-gray-700 space-y-1">
+                <li>
+                  <a href="#" class="group flex items-center px-3 py-2 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-all">
+                    <i class="fa-solid fa-bug mr-3 text-primary-600 dark:text-primary-300"></i>
+                    <span class="text-sm text-gray-700 dark:text-gray-300 group-hover:text-primary-700 dark:group-hover:text-primary-200">Paludisme</span>
+                    <span class="ml-auto text-[11px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200">3</span>
+                  </a>
+                </li>
+                <li>
+                  <a href="#" class="group flex items-center px-3 py-2 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-all">
+                    <i class="fa-solid fa-lungs mr-3 text-primary-600 dark:text-primary-300"></i>
+                    <span class="text-sm text-gray-700 dark:text-gray-300 group-hover:text-primary-700 dark:group-hover:text-primary-200">Tuberculose</span>
+                    <span class="ml-auto text-[11px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200">1</span>
+                  </a>
+                </li>
+                <li>
+                  <a href="#" class="group flex items-center px-3 py-2 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-all">
+                    <i class="fa-solid fa-virus mr-3 text-primary-600 dark:text-primary-300"></i>
+                    <span class="text-sm text-gray-700 dark:text-gray-300 group-hover:text-primary-700 dark:group-hover:text-primary-200">COVID-19</span>
+                    <span class="ml-auto text-[11px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200">0</span>
+                  </a>
+                </li>
+              </ul>
+            </li>
+          </ul>
+        </li>
 
-                  <span v-if="!sidebarCollapsed" class="ml-3 font-medium truncate">
-                    {{ item.name }}
+        <!-- Section Laboratoire -->
+        <li>
+          <h6 x-show="!sidebarCollapsed" class="px-3 mb-2 text-[11px] font-semibold uppercase tracking-wider text-hospital-blue dark:text-primary-200">
+            Laboratoire
+          </h6>
+          <ul class="space-y-1">
+            <li class="relative">
+              <a href="#" class="group relative flex items-center rounded-xl px-3 py-2 transition-all hover:bg-primary-50 dark:hover:bg-primary-900/30 hover:shadow-sm border-l-4 border-transparent text-gray-700 dark:text-gray-300">
+                <span class="w-8 h-8 rounded-lg grid place-items-center shrink-0 bg-gray-100 text-gray-600 group-hover:bg-primary-100 group-hover:text-primary-700 dark:bg-gray-700 dark:text-gray-300 dark:group-hover:bg-primary-800 dark:group-hover:text-primary-200">
+                  <i class="fa-solid fa-vial"></i>
+                </span>
+                <span x-show="!sidebarCollapsed" class="ml-3 font-medium truncate">Prélèvements</span>
+              </a>
+            </li>
+            <li class="relative">
+              <a href="#" class="group relative flex items-center rounded-xl px-3 py-2 transition-all hover:bg-primary-50 dark:hover:bg-primary-900/30 hover:shadow-sm border-l-4 border-transparent text-gray-700 dark:text-gray-300">
+                <span class="w-8 h-8 rounded-lg grid place-items-center shrink-0 bg-gray-100 text-gray-600 group-hover:bg-primary-100 group-hover:text-primary-700 dark:bg-gray-700 dark:text-gray-300 dark:group-hover:bg-primary-800 dark:group-hover:text-primary-200">
+                  <i class="fa-solid fa-flask-vial"></i>
+                </span>
+                <span x-show="!sidebarCollapsed" class="ml-3 font-medium truncate">Demande d'Analyse</span>
+                <div x-show="!sidebarCollapsed" class="absolute right-3 top-1/2 -translate-y-1/2">
+                  <span class="text-xs font-medium px-2 py-0.5 rounded-full bg-red-100 text-red-600">7</span>
+                </div>
+              </a>
+            </li>
+            <li class="relative">
+              <a href="#" class="group relative flex items-center rounded-xl px-3 py-2 transition-all hover:bg-primary-50 dark:hover:bg-primary-900/30 hover:shadow-sm border-l-4 border-transparent text-gray-700 dark:text-gray-300">
+                <span class="w-8 h-8 rounded-lg grid place-items-center shrink-0 bg-gray-100 text-gray-600 group-hover:bg-primary-100 group-hover:text-primary-700 dark:bg-gray-700 dark:text-gray-300 dark:group-hover:bg-primary-800 dark:group-hover:text-primary-200">
+                  <i class="fa-solid fa-check-double"></i>
+                </span>
+                <span x-show="!sidebarCollapsed" class="ml-3 font-medium truncate">Analyses effectuées</span>
+                <div x-show="!sidebarCollapsed" class="absolute right-3 top-1/2 -translate-y-1/2">
+                  <span class="text-xs font-medium px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-600">52</span>
+                </div>
+              </a>
+            </li>
+          </ul>
+        </li>
+
+        <!-- Section Pharmacie -->
+        <li>
+          <h6 x-show="!sidebarCollapsed" class="px-3 mb-2 text-[11px] font-semibold uppercase tracking-wider text-hospital-blue dark:text-primary-200">
+            Pharmacie
+          </h6>
+          <ul class="space-y-1">
+            <li class="relative">
+              <a href="#" class="group relative flex items-center rounded-xl px-3 py-2 transition-all hover:bg-primary-50 dark:hover:bg-primary-900/30 hover:shadow-sm border-l-4 border-transparent text-gray-700 dark:text-gray-300">
+                <span class="w-8 h-8 rounded-lg grid place-items-center shrink-0 bg-gray-100 text-gray-600 group-hover:bg-primary-100 group-hover:text-primary-700 dark:bg-gray-700 dark:text-gray-300 dark:group-hover:bg-primary-800 dark:group-hover:text-primary-200">
+                  <i class="fa-solid fa-prescription-bottle-medical"></i>
+                </span>
+                <span x-show="!sidebarCollapsed" class="ml-3 font-medium truncate">Médicaments</span>
+              </a>
+            </li>
+          </ul>
+        </li>
+
+        <!-- Section Administration -->
+        <li>
+          <h6 x-show="!sidebarCollapsed" class="px-3 mb-2 text-[11px] font-semibold uppercase tracking-wider text-hospital-blue dark:text-primary-200">
+            Administration
+          </h6>
+          <ul class="space-y-1">
+            <li class="relative">
+              <a href="#" class="group relative flex items-center rounded-xl px-3 py-2 transition-all hover:bg-primary-50 dark:hover:bg-primary-900/30 hover:shadow-sm border-l-4 border-transparent text-gray-700 dark:text-gray-300">
+                <span class="w-8 h-8 rounded-lg grid place-items-center shrink-0 bg-gray-100 text-gray-600 group-hover:bg-primary-100 group-hover:text-primary-700 dark:bg-gray-700 dark:text-gray-300 dark:group-hover:bg-primary-800 dark:group-hover:text-primary-200">
+                  <i class="fa-solid fa-user-circle"></i>
+                </span>
+                <span x-show="!sidebarCollapsed" class="ml-3 font-medium truncate">Gestion des Employés</span>
+              </a>
+            </li>
+            <li class="relative">
+              <a href="#" class="group relative flex items-center rounded-xl px-3 py-2 transition-all hover:bg-primary-50 dark:hover:bg-primary-900/30 hover:shadow-sm border-l-4 border-transparent text-gray-700 dark:text-gray-300">
+                <span class="w-8 h-8 rounded-lg grid place-items-center shrink-0 bg-gray-100 text-gray-600 group-hover:bg-primary-100 group-hover:text-primary-700 dark:bg-gray-700 dark:text-gray-300 dark:group-hover:bg-primary-800 dark:group-hover:text-primary-200">
+                  <i class="fa-solid fa-user-shield"></i>
+                </span>
+                <span x-show="!sidebarCollapsed" class="ml-3 font-medium truncate">Gestion des Rôles</span>
+              </a>
+            </li>
+          </ul>
+        </li>
+
+        <!-- Section Spécialités (CI — Ordre des Médecins) -->
+        <li>
+          <h6 x-show="!sidebarCollapsed" class="px-3 mb-2 text-[11px] font-semibold uppercase tracking-wider text-hospital-blue dark:text-primary-200">
+            Spécialités (CI — Ordre des Médecins)
+          </h6>
+          <ul class="space-y-1">
+            <li class="relative">
+              <button type="button" @click="toggleSub('specialites-ci')" class="group w-full relative flex items-center justify-between rounded-xl px-3 py-2 transition-all hover:bg-primary-50 dark:hover:bg-primary-900/30 hover:shadow-sm border-l-4 border-primary-500 text-primary-700 dark:text-primary-200">
+                <div class="flex items-center min-w-0">
+                  <span class="w-8 h-8 rounded-lg grid place-items-center shrink-0 bg-rose-100 text-rose-600 group-hover:bg-rose-200 group-hover:text-rose-700 dark:bg-rose-900/30 dark:text-rose-300">
+                    <i class="fa-solid fa-briefcase-medical"></i>
                   </span>
-
-                  <!-- Badge à droite -->
-                  <div v-if="item.badge && !sidebarCollapsed" class="absolute right-3 top-1/2 -translate-y-1/2">
-                    <span
-                      :class="[
-                        'text-xs font-medium px-2 py-0.5 rounded-full',
-                        item.badgeColor || 'bg-primary-100 text-primary-700 dark:bg-primary-900/40 dark:text-primary-200'
-                      ]"
-                    >
-                      {{ item.badge }}
-                    </span>
-                  </div>
-
-                  <!-- Tooltip en mode compact -->
-                  <div
-                    v-if="sidebarCollapsed && showTooltip === item.id"
-                    role="tooltip"
-                    class="absolute left-full top-1/2 -translate-y-1/2 ml-2 px-3 py-1.5
-                           bg-gray-900 text-white text-xs rounded-lg shadow-lg z-50 whitespace-nowrap"
-                  >
-                    {{ item.name }}
-                  </div>
-                </a>
-              </template>
-
-              <!-- Item avec sous-menu -->
-              <template v-else>
-                <button
-                  type="button"
-                  :class="[
-                    'group w-full relative flex items-center justify-between rounded-xl px-3 py-2 transition-all',
-                    'hover:bg-primary-50 dark:hover:bg-primary-900/30 hover:shadow-sm',
-                    'border-l-4',
-                    isOpen(item.id) ? 'border-primary-500 text-primary-700 dark:text-primary-200'
-                                    : 'border-transparent text-gray-700 dark:text-gray-300'
-                  ]"
-                  @click="toggleSub(item.id)"
-                  @mouseenter="showTooltip = sidebarCollapsed ? item.id : null"
-                  @mouseleave="showTooltip = null"
-                >
-                  <div class="flex items-center min-w-0">
-                    <span
-                      class="w-8 h-8 rounded-lg grid place-items-center shrink-0
-                             bg-rose-100 text-rose-600 group-hover:bg-rose-200 group-hover:text-rose-700
-                             dark:bg-rose-900/30 dark:text-rose-300"
-                    >
-                      <i :class="item.icon"></i>
-                    </span>
-                    <span v-if="!sidebarCollapsed" class="ml-3 font-medium truncate">{{ item.name }}</span>
-                  </div>
-
-                  <em
-                    v-if="!sidebarCollapsed"
-                    :class="[
-                      'fa-solid text-xs transition-transform',
-                      isOpen(item.id) ? 'fa-chevron-down' : 'fa-chevron-right',
-                      'text-gray-400 group-hover:text-primary-600'
-                    ]"
-                  ></em>
-
-                  <!-- Tooltip compact -->
-                  <div
-                    v-if="sidebarCollapsed && showTooltip === item.id"
-                    role="tooltip"
-                    class="absolute left-full top-1/2 -translate-y-1/2 ml-2 px-3 py-1.5
-                           bg-gray-900 text-white text-xs rounded-lg shadow-lg z-50 whitespace-nowrap"
-                  >
-                    {{ item.name }}
-                  </div>
-                </button>
-
-                <!-- Sous-menu -->
-                <transition name="fade">
-                  <ul
-                    v-show="isOpen(item.id) && !sidebarCollapsed"
-                    class="mt-1 ml-4 pl-2 border-l-2 border-gray-200 dark:border-gray-700 space-y-1"
-                  >
-                    <li v-for="child in item.children" :key="child.id">
-                      <a
-                        :href="child.link || '#'"
-                        class="group flex items-center px-3 py-2 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-all"
-                        @click.prevent="activate(child)"
-                      >
-                        <i :class="[child.icon || 'fa-regular fa-circle', 'mr-3 text-primary-600 dark:text-primary-300']"></i>
-                        <span class="text-sm text-gray-700 dark:text-gray-300 group-hover:text-primary-700 dark:group-hover:text-primary-200">
-                          {{ child.name }}
-                        </span>
-                        <span
-                          v-if="child.badge"
-                          class="ml-auto text-[11px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200"
-                        >
-                          {{ child.badge }}
-                        </span>
-                      </a>
-                    </li>
-                  </ul>
-                </transition>
-              </template>
+                  <span x-show="!sidebarCollapsed" class="ml-3 font-medium truncate">Spécialités médicales</span>
+                </div>
+                <em x-show="!sidebarCollapsed" class="fa-solid text-xs transition-transform fa-chevron-down text-gray-400 group-hover:text-primary-600"></em>
+              </button>
+              <ul x-show="isOpen('specialites-ci') && !sidebarCollapsed" class="mt-1 ml-4 pl-2 border-l-2 border-gray-200 dark:border-gray-700 space-y-1">
+                <li>
+                  <a href="#" class="group flex items-center px-3 py-2 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-all">
+                    <i class="fa-solid fa-lungs mr-3 text-primary-600 dark:text-primary-300"></i>
+                    <span class="text-sm text-gray-700 dark:text-gray-300 group-hover:text-primary-700 dark:group-hover:text-primary-200">Allergologie</span>
+                  </a>
+                </li>
+                <li>
+                  <a href="#" class="group flex items-center px-3 py-2 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-all">
+                    <i class="fa-solid fa-venus-mars mr-3 text-primary-600 dark:text-primary-300"></i>
+                    <span class="text-sm text-gray-700 dark:text-gray-300 group-hover:text-primary-700 dark:group-hover:text-primary-200">Andrologie</span>
+                  </a>
+                </li>
+                <li>
+                  <a href="#" class="group flex items-center px-3 py-2 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-all">
+                    <i class="fa-solid fa-syringe mr-3 text-primary-600 dark:text-primary-300"></i>
+                    <span class="text-sm text-gray-700 dark:text-gray-300 group-hover:text-primary-700 dark:group-hover:text-primary-200">Anesthésie-Réanimation</span>
+                  </a>
+                </li>
+                <li>
+                  <a href="#" class="group flex items-center px-3 py-2 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-all">
+                    <i class="fa-solid fa-dna mr-3 text-primary-600 dark:text-primary-300"></i>
+                    <span class="text-sm text-gray-700 dark:text-gray-300 group-hover:text-primary-700 dark:group-hover:text-primary-200">Biologie médicale</span>
+                  </a>
+                </li>
+                <li>
+                  <a href="#" class="group flex items-center px-3 py-2 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-all">
+                    <i class="fa-solid fa-heart-pulse mr-3 text-primary-600 dark:text-primary-300"></i>
+                    <span class="text-sm text-gray-700 dark:text-gray-300 group-hover:text-primary-700 dark:group-hover:text-primary-200">Cardiologie</span>
+                  </a>
+                </li>
+                <li>
+                  <a href="#" class="group flex items-center px-3 py-2 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-all">
+                    <i class="fa-solid fa-scissors mr-3 text-primary-600 dark:text-primary-300"></i>
+                    <span class="text-sm text-gray-700 dark:text-gray-300 group-hover:text-primary-700 dark:group-hover:text-primary-200">Chirurgie</span>
+                  </a>
+                </li>
+                <li>
+                  <a href="#" class="group flex items-center px-3 py-2 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-all">
+                    <i class="fa-solid fa-sun mr-3 text-primary-600 dark:text-primary-300"></i>
+                    <span class="text-sm text-gray-700 dark:text-gray-300 group-hover:text-primary-700 dark:group-hover:text-primary-200">Dermatologie</span>
+                  </a>
+                </li>
+                <li>
+                  <a href="#" class="group flex items-center px-3 py-2 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-all">
+                    <i class="fa-solid fa-vial mr-3 text-primary-600 dark:text-primary-300"></i>
+                    <span class="text-sm text-gray-700 dark:text-gray-300 group-hover:text-primary-700 dark:group-hover:text-primary-200">Endocrinologie</span>
+                  </a>
+                </li>
+                <li>
+                  <a href="#" class="group flex items-center px-3 py-2 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-all">
+                    <i class="fa-solid fa-person-cane mr-3 text-primary-600 dark:text-primary-300"></i>
+                    <span class="text-sm text-gray-700 dark:text-gray-300 group-hover:text-primary-700 dark:group-hover:text-primary-200">Gériatrie</span>
+                  </a>
+                </li>
+                <li>
+                  <a href="#" class="group flex items-center px-3 py-2 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-all">
+                    <i class="fa-solid fa-clipboard mr-3 text-primary-600 dark:text-primary-300"></i>
+                    <span class="text-sm text-gray-700 dark:text-gray-300 group-hover:text-primary-700 dark:group-hover:text-primary-200">Gastro-entérologie</span>
+                  </a>
+                </li>
+                <li>
+                  <a href="#" class="group flex items-center px-3 py-2 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-all">
+                    <i class="fa-solid fa-person-pregnant mr-3 text-primary-600 dark:text-primary-300"></i>
+                    <span class="text-sm text-gray-700 dark:text-gray-300 group-hover:text-primary-700 dark:group-hover:text-primary-200">Gynécologie-Obstétrique</span>
+                  </a>
+                </li>
+                <li>
+                  <a href="#" class="group flex items-center px-3 py-2 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-all">
+                    <i class="fa-solid fa-camera mr-3 text-primary-600 dark:text-primary-300"></i>
+                    <span class="text-sm text-gray-700 dark:text-gray-300 group-hover:text-primary-700 dark:group-hover:text-primary-200">Imagerie médicale / Radiologie</span>
+                  </a>
+                </li>
+                <li>
+                  <a href="#" class="group flex items-center px-3 py-2 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-all">
+                    <i class="fa-solid fa-droplet mr-3 text-primary-600 dark:text-primary-300"></i>
+                    <span class="text-sm text-gray-700 dark:text-gray-300 group-hover:text-primary-700 dark:group-hover:text-primary-200">Néphrologie</span>
+                  </a>
+                </li>
+                <li>
+                  <a href="#" class="group flex items-center px-3 py-2 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-all">
+                    <i class="fa-solid fa-brain mr-3 text-primary-600 dark:text-primary-300"></i>
+                    <span class="text-sm text-gray-700 dark:text-gray-300 group-hover:text-primary-700 dark:group-hover:text-primary-200">Neurologie</span>
+                  </a>
+                </li>
+                <li>
+                  <a href="#" class="group flex items-center px-3 py-2 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-all">
+                    <i class="fa-solid fa-apple-whole mr-3 text-primary-600 dark:text-primary-300"></i>
+                    <span class="text-sm text-gray-700 dark:text-gray-300 group-hover:text-primary-700 dark:group-hover:text-primary-200">Nutrition</span>
+                  </a>
+                </li>
+                <li>
+                  <a href="#" class="group flex items-center px-3 py-2 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-all">
+                    <i class="fa-solid fa-eye mr-3 text-primary-600 dark:text-primary-300"></i>
+                    <span class="text-sm text-gray-700 dark:text-gray-300 group-hover:text-primary-700 dark:group-hover:text-primary-200">Ophtalmologie</span>
+                  </a>
+                </li>
+                <li>
+                  <a href="#" class="group flex items-center px-3 py-2 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-all">
+                    <i class="fa-solid fa-ear-listen mr-3 text-primary-600 dark:text-primary-300"></i>
+                    <span class="text-sm text-gray-700 dark:text-gray-300 group-hover:text-primary-700 dark:group-hover:text-primary-200">ORL (Oto-Rhino-Laryngologie)</span>
+                  </a>
+                </li>
+                <li>
+                  <a href="#" class="group flex items-center px-3 py-2 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-all">
+                    <i class="fa-solid fa-baby mr-3 text-primary-600 dark:text-primary-300"></i>
+                    <span class="text-sm text-gray-700 dark:text-gray-300 group-hover:text-primary-700 dark:group-hover:text-primary-200">Pédiatrie</span>
+                  </a>
+                </li>
+                <li>
+                  <a href="#" class="group flex items-center px-3 py-2 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-all">
+                    <i class="fa-solid fa-lungs mr-3 text-primary-600 dark:text-primary-300"></i>
+                    <span class="text-sm text-gray-700 dark:text-gray-300 group-hover:text-primary-700 dark:group-hover:text-primary-200">Pneumologie</span>
+                  </a>
+                </li>
+                <li>
+                  <a href="#" class="group flex items-center px-3 py-2 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-all">
+                    <i class="fa-solid fa-brain mr-3 text-primary-600 dark:text-primary-300"></i>
+                    <span class="text-sm text-gray-700 dark:text-gray-300 group-hover:text-primary-700 dark:group-hover:text-primary-200">Psychiatrie</span>
+                  </a>
+                </li>
+                <li>
+                  <a href="#" class="group flex items-center px-3 py-2 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-all">
+                    <i class="fa-solid fa-people-group mr-3 text-primary-600 dark:text-primary-300"></i>
+                    <span class="text-sm text-gray-700 dark:text-gray-300 group-hover:text-primary-700 dark:group-hover:text-primary-200">Santé publique</span>
+                  </a>
+                </li>
+                <li>
+                  <a href="#" class="group flex items-center px-3 py-2 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-all">
+                    <i class="fa-solid fa-tooth mr-3 text-primary-600 dark:text-primary-300"></i>
+                    <span class="text-sm text-gray-700 dark:text-gray-300 group-hover:text-primary-700 dark:group-hover:text-primary-200">Stomatologie</span>
+                  </a>
+                </li>
+              </ul>
             </li>
           </ul>
         </li>
       </ul>
 
       <!-- Actions rapides pied -->
-      <div v-if="!sidebarCollapsed" class="mt-4 px-4 pb-4">
+      <div x-show="!sidebarCollapsed" class="mt-4 px-4 pb-4">
         <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
           <h6 class="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2">Actions rapides</h6>
           <div class="flex gap-2">
-            <button
-              class="flex-1 bg-primary-50 text-primary-700 text-xs font-medium py-2 px-3 rounded-lg text-center hover:bg-primary-100 dark:bg-primary-900/30 dark:text-primary-200"
-              @click="notify('success','Nouveau','Ouverture d’un nouveau dossier')"
-            >
+            <button class="flex-1 bg-primary-50 text-primary-700 text-xs font-medium py-2 px-3 rounded-lg text-center hover:bg-primary-100 dark:bg-primary-900/30 dark:text-primary-200" @click="notify('success','Nouveau','Ouverture d'un nouveau dossier')">
               <i class="fas fa-plus mr-1"></i> Nouveau
             </button>
-            <button
-              class="flex-1 bg-green-50 text-green-700 text-xs font-medium py-2 px-3 rounded-lg text-center hover:bg-green-100 dark:bg-green-900/30 dark:text-green-200"
-              @click="notify('info','Recherche','Ouverture de la recherche globale')"
-            >
+            <button class="flex-1 bg-green-50 text-green-700 text-xs font-medium py-2 px-3 rounded-lg text-center hover:bg-green-100 dark:bg-green-900/30 dark:text-green-200" @click="notify('info','Recherche','Ouverture de la recherche globale')">
               <i class="fas fa-search mr-1"></i> Rechercher
             </button>
           </div>
@@ -307,10 +622,10 @@
     <!-- Bloc utilisateur (pied) -->
     <div class="p-4 border-t border-gray-200 dark:border-gray-700">
       <div class="flex items-center">
-        <img :src="currentUser.avatar" alt="Utilisateur" class="w-10 h-10 rounded-full object-cover"/>
-        <div v-if="!sidebarCollapsed" class="ml-3">
-          <p class="font-medium">{{ currentUser.shortName }}</p>
-          <p class="text-sm text-gray-500 dark:text-gray-400">{{ currentUser.role }}</p>
+        <img src="https://randomuser.me/api/portraits/women/68.jpg" alt="Utilisateur" class="w-10 h-10 rounded-full object-cover"/>
+        <div x-show="!sidebarCollapsed" class="ml-3">
+          <p class="font-medium">Dr. S. Martin</p>
+          <p class="text-sm text-gray-500 dark:text-gray-400">Cardiologue</p>
         </div>
       </div>
     </div>
@@ -321,97 +636,103 @@
     <!-- Topbar -->
     <header class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 md:px-6 h-16 flex items-center justify-between">
       <div class="flex items-center gap-3">
-        <button class="md:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
-                @click="showDrawer = true" aria-label="Ouvrir le panneau">
+        <button class="md:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700" @click="showDrawer = true" aria-label="Ouvrir le panneau">
           <i class="fa-solid fa-bars"></i>
         </button>
-        <h2 class="text-lg font-semibold">{{ currentPage }}</h2>
+        <h2 class="text-lg font-semibold">Tableau de bord</h2>
       </div>
 
       <div class="flex items-center gap-3">
         <!-- Search -->
         <label class="hidden md:flex items-center bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg px-3">
           <i class="fa-solid fa-magnifying-glass text-gray-400"></i>
-          <input placeholder="Rechercher un patient, dossier, acte…"
-                 class="px-2 py-1 bg-transparent outline-none w-64 text-sm"/>
+          <input placeholder="Rechercher un patient, dossier, acte…" class="px-2 py-1 bg-transparent outline-none w-64 text-sm"/>
         </label>
 
         <!-- Theme -->
-        <button @click="toggleDarkMode" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
-                aria-label="Basculer le thème">
+        <button @click="toggleDarkMode()" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700" aria-label="Basculer le thème">
           <i :class="darkMode ? 'fa-solid fa-sun' : 'fa-solid fa-moon'"></i>
         </button>
 
         <!-- Notifs -->
         <div class="relative">
-          <button @click="toggleNotifications" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
-                  aria-haspopup="true" :aria-expanded="showNotifications.toString()"
-                  aria-label="Notifications">
+          <button @click="toggleNotifications()" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700" aria-haspopup="true" :aria-expanded="showNotifications.toString()" aria-label="Notifications">
             <i class="fa-regular fa-bell"></i>
-            <span class="absolute -top-1 -right-1 bg-hospital-rose text-white text-[10px] rounded-full min-w-[18px] h-[18px] px-1 grid place-items-center">{{ notifications.length }}</span>
+            <span class="absolute -top-1 -right-1 bg-hospital-rose text-white text-[10px] rounded-full min-w-[18px] h-[18px] px-1 grid place-items-center">3</span>
           </button>
 
-          <transition name="fade">
-            <div v-if="showNotifications"
-                 class="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-40">
-              <div class="p-3 border-b border-gray-200 dark:border-gray-700">
-                <h3 class="font-semibold">Notifications</h3>
-              </div>
-              <div class="max-h-96 overflow-y-auto custom-scrollbar">
-                <button v-for="n in notifications" :key="n.id"
-                        class="w-full text-left p-4 border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
-                  <div class="flex items-start">
-                    <div :class="['p-2 rounded-lg shrink-0', n.type==='urgent' ? 'bg-hospital-rose text-white' : 'bg-primary-100 text-primary-700 dark:bg-primary-900 dark:text-primary-300']">
-                      <i :class="n.icon"></i>
-                    </div>
-                    <div class="ml-3">
-                      <p class="font-medium">{{ n.title }}</p>
-                      <p class="text-sm text-gray-600 dark:text-gray-400">{{ n.message }}</p>
-                      <p class="text-xs text-gray-500 mt-1">{{ n.time }}</p>
-                    </div>
-                  </div>
-                </button>
-              </div>
-              <div class="p-2">
-                <button class="w-full py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-primary-600 dark:text-primary-300">
-                  Voir toutes les notifications
-                </button>
-              </div>
+          <div x-show="showNotifications" class="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-40">
+            <div class="p-3 border-b border-gray-200 dark:border-gray-700">
+              <h3 class="font-semibold">Notifications</h3>
             </div>
-          </transition>
+            <div class="max-h-96 overflow-y-auto custom-scrollbar">
+              <button class="w-full text-left p-4 border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
+                <div class="flex items-start">
+                  <div class="p-2 rounded-lg shrink-0 bg-hospital-rose text-white">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                  </div>
+                  <div class="ml-3">
+                    <p class="font-medium">Alerte stock</p>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">Stock faible d'antibiotiques</p>
+                    <p class="text-xs text-gray-500 mt-1">Il y a 5 min</p>
+                  </div>
+                </div>
+              </button>
+              <button class="w-full text-left p-4 border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
+                <div class="flex items-start">
+                  <div class="p-2 rounded-lg shrink-0 bg-primary-100 text-primary-700 dark:bg-primary-900 dark:text-primary-300">
+                    <i class="fa-solid fa-circle-info"></i>
+                  </div>
+                  <div class="ml-3">
+                    <p class="font-medium">Nouveau message</p>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">Dr. Martin vous a écrit</p>
+                    <p class="text-xs text-gray-500 mt-1">Il y a 15 min</p>
+                  </div>
+                </div>
+              </button>
+              <button class="w-full text-left p-4 border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
+                <div class="flex items-start">
+                  <div class="p-2 rounded-lg shrink-0 bg-primary-100 text-primary-700 dark:bg-primary-900 dark:text-primary-300">
+                    <i class="fa-solid fa-calendar-check"></i>
+                  </div>
+                  <div class="ml-3">
+                    <p class="font-medium">Rappel RDV</p>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">RDV avec M. Dupont à 14h</p>
+                    <p class="text-xs text-gray-500 mt-1">Il y a 1 h</p>
+                  </div>
+                </div>
+              </button>
+            </div>
+            <div class="p-2">
+              <button class="w-full py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-primary-600 dark:text-primary-300">
+                Voir toutes les notifications
+              </button>
+            </div>
+          </div>
         </div>
 
         <!-- Profil -->
         <div class="relative">
-          <button @click="toggleProfileMenu"
-                  class="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
-                  aria-haspopup="true" :aria-expanded="showProfileMenu.toString()">
-            <img :src="currentUser.avatar" class="w-8 h-8 rounded-full"
-                 alt="Avatar"/>
-            <span class="hidden sm:inline font-medium">{{ currentUser.shortName }}</span>
+          <button @click="toggleProfileMenu()" class="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700" aria-haspopup="true" :aria-expanded="showProfileMenu.toString()">
+            <img src="https://randomuser.me/api/portraits/women/68.jpg" class="w-8 h-8 rounded-full" alt="Avatar"/>
+            <span class="hidden sm:inline font-medium">Dr. S. Martin</span>
             <i class="fa-solid fa-chevron-down text-xs"></i>
           </button>
 
-          <transition name="fade">
-            <div v-if="showProfileMenu"
-                 class="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-40">
-              <div class="p-2">
-                <a href="#"
-                   class="flex items-center px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
-                  <i class="fa-solid fa-user mr-3"></i> Mon profil
-                </a>
-                <a href="#"
-                   class="flex items-center px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
-                  <i class="fa-solid fa-cog mr-3"></i> Paramètres
-                </a>
-                <div class="my-1 border-t border-gray-200 dark:border-gray-700"></div>
-                <button class="w-full flex items-center px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
-                        @click="notify('success','Déconnexion','Vous avez été déconnecté(e)')">
-                  <i class="fa-solid fa-arrow-right-from-bracket mr-3"></i> Déconnexion
-                </button>
-              </div>
+          <div x-show="showProfileMenu" class="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-40">
+            <div class="p-2">
+              <a href="#" class="flex items-center px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
+                <i class="fa-solid fa-user mr-3"></i> Mon profil
+              </a>
+              <a href="#" class="flex items-center px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
+                <i class="fa-solid fa-cog mr-3"></i> Paramètres
+              </a>
+              <div class="my-1 border-t border-gray-200 dark:border-gray-700"></div>
+              <button class="w-full flex items-center px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700" @click="notify('success','Déconnexion','Vous avez été déconnecté(e)')">
+                <i class="fa-solid fa-arrow-right-from-bracket mr-3"></i> Déconnexion
+              </button>
             </div>
-          </transition>
+          </div>
         </div>
       </div>
     </header>
@@ -426,7 +747,7 @@
             <div class="flex flex-wrap gap-2">
               <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-primary-100 text-primary-900 dark:bg-primary-900/40 dark:text-primary-200">
                 Aujourd'hui
-                <button class="ml-2" @click="notify('info','Filtre retiré','Période: Aujourd’hui retirée')"><i class="fa-solid fa-xmark"></i></button>
+                <button class="ml-2" @click="notify('info','Filtre retiré','Période: Aujourd'hui retirée')"><i class="fa-solid fa-xmark"></i></button>
               </span>
               <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-hospital-blue text-white">
                 Urgences
@@ -441,8 +762,7 @@
               <option>Ce mois</option>
               <option>Cette année</option>
             </select>
-            <button class="px-4 py-2 bg-hospital-teal text-white rounded-lg hover:bg-teal-700"
-                    @click="notify('success','Export','Export en cours…')">
+            <button class="px-4 py-2 bg-hospital-teal text-white rounded-lg hover:bg-teal-700" @click="notify('success','Export','Export en cours…')">
               <i class="fa-solid fa-download mr-2"></i>Exporter
             </button>
           </div>
@@ -451,24 +771,70 @@
 
       <!-- KPIs -->
       <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <div v-for="kpi in kpis" :key="kpi.id"
-             class="card-hover bg-white dark:bg-gray-800 rounded-xl shadow-sm p-5 border-l-4"
-             :class="[
-               kpi.trend==='up' ? 'border-hospital-emerald' : 'border-hospital-rose',
-               kpi.loading ? 'animate-pulse-soft' : ''
-             ]">
+        <div class="card-hover bg-white dark:bg-gray-800 rounded-xl shadow-sm p-5 border-l-4 border-hospital-emerald">
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-sm text-gray-500 dark:text-gray-400">{{ kpi.title }}</p>
-              <h3 class="text-2xl font-extrabold mt-1">{{ kpi.value }}</h3>
+              <p class="text-sm text-gray-500 dark:text-gray-400">Patients aujourd'hui</p>
+              <h3 class="text-2xl font-extrabold mt-1">42</h3>
             </div>
-            <div :class="['p-3 rounded-lg', kpi.trend==='up' ? 'bg-emerald-100 text-hospital-emerald dark:bg-emerald-900/30' : 'bg-rose-100 text-hospital-rose dark:bg-rose-900/30']">
-              <i :class="kpi.icon"></i>
+            <div class="p-3 rounded-lg bg-emerald-100 text-hospital-emerald dark:bg-emerald-900/30">
+              <i class="fa-solid fa-user-injured"></i>
             </div>
           </div>
           <div class="mt-3 flex items-center">
-            <span :class="['text-sm font-medium', kpi.trend==='up' ? 'text-hospital-emerald' : 'text-hospital-rose']">
-              <i :class="kpi.trend==='up' ? 'fa-solid fa-arrow-up mr-1' : 'fa-solid fa-arrow-down mr-1'"></i>{{ kpi.change }}
+            <span class="text-sm font-medium text-hospital-emerald">
+              <i class="fa-solid fa-arrow-up mr-1"></i>+12%
+            </span>
+            <span class="text-sm text-gray-500 dark:text-gray-400 ml-2">vs période précédente</span>
+          </div>
+        </div>
+        <div class="card-hover bg-white dark:bg-gray-800 rounded-xl shadow-sm p-5 border-l-4 border-hospital-emerald">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm text-gray-500 dark:text-gray-400">Taux d'occupation</p>
+              <h3 class="text-2xl font-extrabold mt-1">78%</h3>
+            </div>
+            <div class="p-3 rounded-lg bg-emerald-100 text-hospital-emerald dark:bg-emerald-900/30">
+              <i class="fa-solid fa-bed"></i>
+            </div>
+          </div>
+          <div class="mt-3 flex items-center">
+            <span class="text-sm font-medium text-hospital-emerald">
+              <i class="fa-solid fa-arrow-up mr-1"></i>+5%
+            </span>
+            <span class="text-sm text-gray-500 dark:text-gray-400 ml-2">vs période précédente</span>
+          </div>
+        </div>
+        <div class="card-hover bg-white dark:bg-gray-800 rounded-xl shadow-sm p-5 border-l-4 border-hospital-rose">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm text-gray-500 dark:text-gray-400">Temps d'attente moyen</p>
+              <h3 class="text-2xl font-extrabold mt-1">18min</h3>
+            </div>
+            <div class="p-3 rounded-lg bg-rose-100 text-hospital-rose dark:bg-rose-900/30">
+              <i class="fa-solid fa-clock"></i>
+            </div>
+          </div>
+          <div class="mt-3 flex items-center">
+            <span class="text-sm font-medium text-hospital-rose">
+              <i class="fa-solid fa-arrow-down mr-1"></i>-3%
+            </span>
+            <span class="text-sm text-gray-500 dark:text-gray-400 ml-2">vs période précédente</span>
+          </div>
+        </div>
+        <div class="card-hover bg-white dark:bg-gray-800 rounded-xl shadow-sm p-5 border-l-4 border-hospital-emerald animate-pulse-soft">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm text-gray-500 dark:text-gray-400">Alertes urgentes</p>
+              <h3 class="text-2xl font-extrabold mt-1">3</h3>
+            </div>
+            <div class="p-3 rounded-lg bg-emerald-100 text-hospital-emerald dark:bg-emerald-900/30">
+              <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+          </div>
+          <div class="mt-3 flex items-center">
+            <span class="text-sm font-medium text-hospital-emerald">
+              <i class="fa-solid fa-arrow-up mr-1"></i>+1
             </span>
             <span class="text-sm text-gray-500 dark:text-gray-400 ml-2">vs période précédente</span>
           </div>
@@ -479,131 +845,272 @@
       <section class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden mb-8">
         <div class="border-b border-gray-200 dark:border-gray-700">
           <nav class="flex -mb-px">
-            <button v-for="tab in tabs" :key="tab.id" @click="activeTab = tab.id"
-                    :class="[
+            <button @click="activeTab = 'patients'" :class="[
                        'py-3 px-5 text-sm font-medium border-b-2 outline-none focus-visible:ring-2 focus-visible:ring-primary-500',
-                       activeTab===tab.id ? 'border-primary-500 text-primary-600 dark:text-primary-300'
+                       activeTab==='patients' ? 'border-primary-500 text-primary-600 dark:text-primary-300'
                                           : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
                     ]">
-              {{ tab.name }}
-              <span v-if="tab.badge" class="ml-2 py-0.5 px-2 text-xs rounded-full"
-                    :class="[
-                      tab.badgeType==='primary' ? 'bg-primary-100 text-primary-900 dark:bg-primary-900/40 dark:text-primary-200'
-                                                : tab.badgeType==='danger' ? 'bg-rose-100 text-rose-800 dark:bg-rose-900/40 dark:text-rose-200'
-                                                                           : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
-                    ]">{{ tab.badge }}</span>
+              Patients
+              <span class="ml-2 py-0.5 px-2 text-xs rounded-full bg-primary-100 text-primary-900 dark:bg-primary-900/40 dark:text-primary-200">42</span>
+            </button>
+            <button @click="activeTab = 'activity'" :class="[
+                       'py-3 px-5 text-sm font-medium border-b-2 outline-none focus-visible:ring-2 focus-visible:ring-primary-500',
+                       activeTab==='activity' ? 'border-primary-500 text-primary-600 dark:text-primary-300'
+                                          : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
+                    ]">
+              Activité
+            </button>
+            <button @click="activeTab = 'analytics'" :class="[
+                       'py-3 px-5 text-sm font-medium border-b-2 outline-none focus-visible:ring-2 focus-visible:ring-primary-500',
+                       activeTab==='analytics' ? 'border-primary-500 text-primary-600 dark:text-primary-300'
+                                          : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
+                    ]">
+              Analytiques
+            </button>
+            <button @click="activeTab = 'settings'" :class="[
+                       'py-3 px-5 text-sm font-medium border-b-2 outline-none focus-visible:ring-2 focus-visible:ring-primary-500',
+                       activeTab==='settings' ? 'border-primary-500 text-primary-600 dark:text-primary-300'
+                                          : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
+                    ]">
+              Paramètres
+              <span class="ml-2 py-0.5 px-2 text-xs rounded-full bg-rose-100 text-rose-800 dark:bg-rose-900/40 dark:text-rose-200">3</span>
             </button>
           </nav>
         </div>
 
         <div class="p-6">
           <!-- Tab Patients -->
-          <transition name="fade">
-            <div v-if="activeTab==='patients'">
-              <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                  <thead class="bg-gray-50 dark:bg-gray-700/50">
-                  <tr class="text-left text-xs font-semibold uppercase text-gray-500 dark:text-gray-300">
-                    <th class="px-4 py-3">Patient</th>
-                    <th class="px-4 py-3">Service</th>
-                    <th class="px-4 py-3">Statut</th>
-                    <th class="px-4 py-3">Dernière MAJ</th>
-                    <th class="px-4 py-3">Actions</th>
-                  </tr>
-                  </thead>
-                  <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-                  <tr v-for="p in patients" :key="p.id"
-                      class="hover:bg-gray-50 dark:hover:bg-gray-700/40">
-                    <td class="px-4 py-3">
-                      <div class="flex items-center">
-                        <img :src="p.avatar" class="w-10 h-10 rounded-full object-cover"
-                             :alt="'Avatar '+p.name"/>
-                        <div class="ml-3">
-                          <div class="font-medium">{{ p.name }}</div>
-                          <div class="text-xs text-gray-500">{{ p.age }} ans • {{ p.id }}</div>
-                        </div>
+          <div x-show="activeTab==='patients'">
+            <div class="overflow-x-auto">
+              <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead class="bg-gray-50 dark:bg-gray-700/50">
+                <tr class="text-left text-xs font-semibold uppercase text-gray-500 dark:text-gray-300">
+                  <th class="px-4 py-3">Patient</th>
+                  <th class="px-4 py-3">Service</th>
+                  <th class="px-4 py-3">Statut</th>
+                  <th class="px-4 py-3">Dernière MAJ</th>
+                  <th class="px-4 py-3">Actions</th>
+                </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/40">
+                  <td class="px-4 py-3">
+                    <div class="flex items-center">
+                      <img src="https://randomuser.me/api/portraits/women/32.jpg" class="w-10 h-10 rounded-full object-cover" alt="Avatar Marie Lambert"/>
+                      <div class="ml-3">
+                        <div class="font-medium">Marie Lambert</div>
+                        <div class="text-xs text-gray-500">34 ans • P-7741</div>
                       </div>
-                    </td>
-                    <td class="px-4 py-3 text-sm">{{ p.service }}</td>
-                    <td class="px-4 py-3">
-                      <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full"
-                            :class="p.status==='Admis' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200'
-                                   : p.status==='En attente' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-200'
-                                   : 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200'">
-                        {{ p.status }}
-                      </span>
-                    </td>
-                    <td class="px-4 py-3 text-sm text-gray-500">{{ p.lastUpdate }}</td>
-                    <td class="px-4 py-3 text-sm">
-                      <button class="px-2 py-1 rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 mr-2"
-                              @click="openDrawerWith(p)">
-                        <i class="fa-solid fa-file-medical"></i>
-                      </button>
-                      <button class="px-2 py-1 rounded-lg bg-primary-600 hover:bg-primary-700 text-white"
-                              @click="showModal = true">
-                        <i class="fa-solid fa-pen-to-square"></i>
-                      </button>
-                    </td>
-                  </tr>
-                  </tbody>
-                </table>
-              </div>
-
-              <!-- Pagination -->
-              <div class="px-4 py-3 flex items-center justify-between border-t border-gray-200 dark:border-gray-700">
-                <p class="text-sm text-gray-600">Affiche 1–10 sur 97 résultats</p>
-                <nav class="inline-flex rounded-md shadow-sm overflow-hidden">
-                  <button class="px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600" aria-label="Précédent">
-                    <i class="fa-solid fa-angles-left"></i>
-                  </button>
-                  <button class="px-3 py-2 border-t border-b border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700">1</button>
-                  <button class="px-3 py-2 border-t border-b border-gray-300 dark:border-gray-600 bg-primary-50 dark:bg-primary-900/40 text-primary-700 dark:text-primary-300">2</button>
-                  <button class="px-3 py-2 border-t border-b border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700">3</button>
-                  <button class="px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600" aria-label="Suivant">
-                    <i class="fa-solid fa-angles-right"></i>
-                  </button>
-                </nav>
-              </div>
+                    </div>
+                  </td>
+                  <td class="px-4 py-3 text-sm">Cardiologie</td>
+                  <td class="px-4 py-3">
+                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200">Admis</span>
+                  </td>
+                  <td class="px-4 py-3 text-sm text-gray-500">Il y a 2 h</td>
+                  <td class="px-4 py-3 text-sm">
+                    <button class="px-2 py-1 rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 mr-2" @click="openDrawerWith({name: 'Marie Lambert', age: 34, id: 'P-7741', avatar: 'https://randomuser.me/api/portraits/women/32.jpg'})">
+                      <i class="fa-solid fa-file-medical"></i>
+                    </button>
+                    <button class="px-2 py-1 rounded-lg bg-primary-600 hover:bg-primary-700 text-white" @click="showModal = true">
+                      <i class="fa-solid fa-pen-to-square"></i>
+                    </button>
+                  </td>
+                </tr>
+                <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/40">
+                  <td class="px-4 py-3">
+                    <div class="flex items-center">
+                      <img src="https://randomuser.me/api/portraits/men/54.jpg" class="w-10 h-10 rounded-full object-cover" alt="Avatar Pierre Moreau"/>
+                      <div class="ml-3">
+                        <div class="font-medium">Pierre Moreau</div>
+                        <div class="text-xs text-gray-500">45 ans • P-7842</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="px-4 py-3 text-sm">Pédiatrie</td>
+                  <td class="px-4 py-3">
+                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-200">En attente</span>
+                  </td>
+                  <td class="px-4 py-3 text-sm text-gray-500">Il y a 30 min</td>
+                  <td class="px-4 py-3 text-sm">
+                    <button class="px-2 py-1 rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 mr-2" @click="openDrawerWith({name: 'Pierre Moreau', age: 45, id: 'P-7842', avatar: 'https://randomuser.me/api/portraits/men/54.jpg'})">
+                      <i class="fa-solid fa-file-medical"></i>
+                    </button>
+                    <button class="px-2 py-1 rounded-lg bg-primary-600 hover:bg-primary-700 text-white" @click="showModal = true">
+                      <i class="fa-solid fa-pen-to-square"></i>
+                    </button>
+                  </td>
+                </tr>
+                <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/40">
+                  <td class="px-4 py-3">
+                    <div class="flex items-center">
+                      <img src="https://randomuser.me/api/portraits/women/68.jpg" class="w-10 h-10 rounded-full object-cover" alt="Avatar Claire Bernard"/>
+                      <div class="ml-3">
+                        <div class="font-medium">Claire Bernard</div>
+                        <div class="text-xs text-gray-500">28 ans • P-8188</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="px-4 py-3 text-sm">Urgences</td>
+                  <td class="px-4 py-3">
+                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200">Admis</span>
+                  </td>
+                  <td class="px-4 py-3 text-sm text-gray-500">Il y a 1 h</td>
+                  <td class="px-4 py-3 text-sm">
+                    <button class="px-2 py-1 rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 mr-2" @click="openDrawerWith({name: 'Claire Bernard', age: 28, id: 'P-8188', avatar: 'https://randomuser.me/api/portraits/women/68.jpg'})">
+                      <i class="fa-solid fa-file-medical"></i>
+                    </button>
+                    <button class="px-2 py-1 rounded-lg bg-primary-600 hover:bg-primary-700 text-white" @click="showModal = true">
+                      <i class="fa-solid fa-pen-to-square"></i>
+                    </button>
+                  </td>
+                </tr>
+                <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/40">
+                  <td class="px-4 py-3">
+                    <div class="flex items-center">
+                      <img src="https://randomuser.me/api/portraits/men/32.jpg" class="w-10 h-10 rounded-full object-cover" alt="Avatar Antoine Petit"/>
+                      <div class="ml-3">
+                        <div class="font-medium">Antoine Petit</div>
+                        <div class="text-xs text-gray-500">62 ans • P-7490</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="px-4 py-3 text-sm">Chirurgie</td>
+                  <td class="px-4 py-3">
+                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200">Admis</span>
+                  </td>
+                  <td class="px-4 py-3 text-sm text-gray-500">Il y a 3 h</td>
+                  <td class="px-4 py-3 text-sm">
+                    <button class="px-2 py-1 rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 mr-2" @click="openDrawerWith({name: 'Antoine Petit', age: 62, id: 'P-7490', avatar: 'https://randomuser.me/api/portraits/men/32.jpg'})">
+                      <i class="fa-solid fa-file-medical"></i>
+                    </button>
+                    <button class="px-2 py-1 rounded-lg bg-primary-600 hover:bg-primary-700 text-white" @click="showModal = true">
+                      <i class="fa-solid fa-pen-to-square"></i>
+                    </button>
+                  </td>
+                </tr>
+                <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/40">
+                  <td class="px-4 py-3">
+                    <div class="flex items-center">
+                      <img src="https://randomuser.me/api/portraits/women/44.jpg" class="w-10 h-10 rounded-full object-cover" alt="Avatar Élise Dubois"/>
+                      <div class="ml-3">
+                        <div class="font-medium">Élise Dubois</div>
+                        <div class="text-xs text-gray-500">29 ans • P-9012</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="px-4 py-3 text-sm">Maternité</td>
+                  <td class="px-4 py-3">
+                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-200">En attente</span>
+                  </td>
+                  <td class="px-4 py-3 text-sm text-gray-500">Il y a 45 min</td>
+                  <td class="px-4 py-3 text-sm">
+                    <button class="px-2 py-1 rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 mr-2" @click="openDrawerWith({name: 'Élise Dubois', age: 29, id: 'P-9012', avatar: 'https://randomuser.me/api/portraits/women/44.jpg'})">
+                      <i class="fa-solid fa-file-medical"></i>
+                    </button>
+                    <button class="px-2 py-1 rounded-lg bg-primary-600 hover:bg-primary-700 text-white" @click="showModal = true">
+                      <i class="fa-solid fa-pen-to-square"></i>
+                    </button>
+                  </td>
+                </tr>
+                </tbody>
+              </table>
             </div>
-          </transition>
+
+            <!-- Pagination -->
+            <div class="px-4 py-3 flex items-center justify-between border-t border-gray-200 dark:border-gray-700">
+              <p class="text-sm text-gray-600">Affiche 1–10 sur 97 résultats</p>
+              <nav class="inline-flex rounded-md shadow-sm overflow-hidden">
+                <button class="px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600" aria-label="Précédent">
+                  <i class="fa-solid fa-angles-left"></i>
+                </button>
+                <button class="px-3 py-2 border-t border-b border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700">1</button>
+                <button class="px-3 py-2 border-t border-b border-gray-300 dark:border-gray-600 bg-primary-50 dark:bg-primary-900/40 text-primary-700 dark:text-primary-300">2</button>
+                <button class="px-3 py-2 border-t border-b border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700">3</button>
+                <button class="px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600" aria-label="Suivant">
+                  <i class="fa-solid fa-angles-right"></i>
+                </button>
+              </nav>
+            </div>
+          </div>
 
           <!-- Tab Activité -->
-          <transition name="fade">
-            <div v-if="activeTab==='activity'">
-              <ul class="-mb-8">
-                <li v-for="(e,idx) in timeline" :key="e.id" class="relative pb-8">
-                  <span v-if="idx !== timeline.length - 1"
-                        class="absolute top-4 left-4 -ml-px h-full w-0.5 bg-gray-200 dark:bg-gray-700"></span>
-                  <div class="relative flex gap-3">
-                    <span :class="[
-                          'h-8 w-8 rounded-full grid place-items-center ring-8 ring-white dark:ring-gray-800',
-                          e.type==='admission' ? 'bg-hospital-blue text-white'
-                          : e.type==='exam' ? 'bg-hospital-teal text-white'
-                          : e.type==='release' ? 'bg-hospital-emerald text-white'
-                          : 'bg-hospital-amber text-white'
-                        ]">
-                      <i :class="e.icon"></i>
-                    </span>
-                    <div class="flex-1 pt-1.5 flex justify-between">
-                      <div>
-                        <p class="text-sm">
-                          <b>{{ e.user }}</b> {{ e.action }} <b>{{ e.patient }}</b>
-                        </p>
-                        <p class="text-xs text-gray-500">{{ e.time }}</p>
-                      </div>
-                      <time class="text-xs text-gray-500 whitespace-nowrap"
-                            :datetime="e.datetime">{{ e.date }}</time>
+          <div x-show="activeTab==='activity'">
+            <ul class="-mb-8">
+              <li class="relative pb-8">
+                <span class="absolute top-4 left-4 -ml-px h-full w-0.5 bg-gray-200 dark:bg-gray-700"></span>
+                <div class="relative flex gap-3">
+                  <span class="h-8 w-8 rounded-full grid place-items-center ring-8 ring-white dark:ring-gray-800 bg-hospital-blue text-white">
+                    <i class="fa-solid fa-user-plus"></i>
+                  </span>
+                  <div class="flex-1 pt-1.5 flex justify-between">
+                    <div>
+                      <p class="text-sm">
+                        <b>Dr. Martin</b> a admis <b>Sophie Lambert</b>
+                      </p>
+                      <p class="text-xs text-gray-500">Il y a 2 h</p>
                     </div>
+                    <time class="text-xs text-gray-500 whitespace-nowrap" datetime="2025-09-30T10:30">10:30</time>
                   </div>
-                </li>
-              </ul>
-              <div class="mt-4 text-center">
-                <button class="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
-                  <i class="fa-solid fa-rotate-right mr-2"></i> Charger plus
-                </button>
-              </div>
+                </div>
+              </li>
+              <li class="relative pb-8">
+                <span class="absolute top-4 left-4 -ml-px h-full w-0.5 bg-gray-200 dark:bg-gray-700"></span>
+                <div class="relative flex gap-3">
+                  <span class="h-8 w-8 rounded-full grid place-items-center ring-8 ring-white dark:ring-gray-800 bg-hospital-teal text-white">
+                    <i class="fa-solid fa-stethoscope"></i>
+                  </span>
+                  <div class="flex-1 pt-1.5 flex justify-between">
+                    <div>
+                      <p class="text-sm">
+                        <b>Dr. Lefebvre</b> a examiné <b>Pierre Moreau</b>
+                      </p>
+                      <p class="text-xs text-gray-500">Il y a 3 h</p>
+                    </div>
+                    <time class="text-xs text-gray-500 whitespace-nowrap" datetime="2025-09-30T09:45">09:45</time>
+                  </div>
+                </div>
+              </li>
+              <li class="relative pb-8">
+                <span class="absolute top-4 left-4 -ml-px h-full w-0.5 bg-gray-200 dark:bg-gray-700"></span>
+                <div class="relative flex gap-3">
+                  <span class="h-8 w-8 rounded-full grid place-items-center ring-8 ring-white dark:ring-gray-800 bg-hospital-amber text-white">
+                    <i class="fa-solid fa-vial"></i>
+                  </span>
+                  <div class="flex-1 pt-1.5 flex justify-between">
+                    <div>
+                      <p class="text-sm">
+                        <b>Lab. Central</b> a terminé les analyses de <b>Claire Bernard</b>
+                      </p>
+                      <p class="text-xs text-gray-500">Il y a 5 h</p>
+                    </div>
+                    <time class="text-xs text-gray-500 whitespace-nowrap" datetime="2025-09-30T07:30">07:30</time>
+                  </div>
+                </div>
+              </li>
+              <li class="relative pb-8">
+                <div class="relative flex gap-3">
+                  <span class="h-8 w-8 rounded-full grid place-items-center ring-8 ring-white dark:ring-gray-800 bg-hospital-emerald text-white">
+                    <i class="fa-solid fa-house"></i>
+                  </span>
+                  <div class="flex-1 pt-1.5 flex justify-between">
+                    <div>
+                      <p class="text-sm">
+                        <b>Dr. Dubois</b> a autorisé la sortie de <b>Antoine Petit</b>
+                      </p>
+                      <p class="text-xs text-gray-500">Hier</p>
+                    </div>
+                    <time class="text-xs text-gray-500 whitespace-nowrap" datetime="2025-09-29T16:20">16:20</time>
+                  </div>
+                </div>
+              </li>
+            </ul>
+            <div class="mt-4 text-center">
+              <button class="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
+                <i class="fa-solid fa-rotate-right mr-2"></i> Charger plus
+              </button>
             </div>
-          </transition>
+          </div>
         </div>
       </section>
 
@@ -631,24 +1138,19 @@
 
       <!-- Actions -->
       <section class="flex flex-wrap gap-3 mb-8">
-        <button class="px-4 py-2 bg-hospital-blue text-white rounded-lg hover:bg-blue-700"
-                @click="notify('success','Nouveau patient','Formulaire ouvert')">
+        <button class="px-4 py-2 bg-hospital-blue text-white rounded-lg hover:bg-blue-700" @click="notify('success','Nouveau patient','Formulaire ouvert')">
           <i class="fa-solid fa-user-plus mr-2"></i>Nouveau patient
         </button>
-        <button class="px-4 py-2 bg-hospital-teal text-white rounded-lg hover:bg-teal-700"
-                @click="notify('info','RDV','Création de RDV')">
+        <button class="px-4 py-2 bg-hospital-teal text-white rounded-lg hover:bg-teal-700" @click="notify('info','RDV','Création de RDV')">
           <i class="fa-solid fa-calendar-plus mr-2"></i>Créer un rendez-vous
         </button>
-        <button class="px-4 py-2 bg-hospital-emerald text-white rounded-lg hover:bg-emerald-700"
-                @click="notify('success','Rapport','Génération du rapport')">
+        <button class="px-4 py-2 bg-hospital-emerald text-white rounded-lg hover:bg-emerald-700" @click="notify('success','Rapport','Génération du rapport')">
           <i class="fa-solid fa-file-medical mr-2"></i>Générer un rapport
         </button>
-        <button class="px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600"
-                @click="showModal=true">
+        <button class="px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600" @click="showModal=true">
           <i class="fa-solid fa-gear mr-2"></i>Ouvrir modal
         </button>
-        <button class="px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600"
-                @click="showDrawer=true">
+        <button class="px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600" @click="showDrawer=true">
           <i class="fa-solid fa-bars mr-2"></i>Ouvrir drawer
         </button>
       </section>
@@ -657,21 +1159,49 @@
       <section class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-8">
         <h3 class="text-lg font-semibold mb-4">Processus d'admission</h3>
         <div class="flex items-center justify-between max-w-4xl mx-auto">
-          <div v-for="(s,i) in steps" :key="s.id" class="flex items-center">
+          <div class="flex items-center">
             <div class="flex flex-col items-center">
-              <div :class="[
-                     'h-12 w-12 rounded-full grid place-items-center text-sm font-semibold',
-                     s.status==='completed' ? 'bg-hospital-emerald text-white'
-                     : s.status==='current' ? 'bg-hospital-blue text-white'
-                     : 'bg-gray-100 dark:bg-gray-700 text-gray-500'
-                   ]">
-                <i v-if="s.status==='completed'" class="fa-solid fa-check"></i>
-                <span v-else>{{ i+1 }}</span>
+              <div class="h-12 w-12 rounded-full grid place-items-center text-sm font-semibold bg-hospital-emerald text-white">
+                <i class="fa-solid fa-check"></i>
               </div>
-              <span :class="['mt-2 text-xs font-medium', (s.status==='completed'||s.status==='current') ? 'text-hospital-blue dark:text-hospital-teal':'text-gray-500']">{{ s.name }}</span>
+              <span class="mt-2 text-xs font-medium text-hospital-blue dark:text-hospital-teal">Informations</span>
             </div>
-            <div v-if="i<steps.length-1" class="w-14 h-0.5 mx-3"
-                 :class="s.status==='completed' ? 'bg-hospital-emerald':'bg-gray-200 dark:bg-gray-700'"></div>
+            <div class="w-14 h-0.5 mx-3 bg-hospital-emerald"></div>
+          </div>
+          <div class="flex items-center">
+            <div class="flex flex-col items-center">
+              <div class="h-12 w-12 rounded-full grid place-items-center text-sm font-semibold bg-hospital-emerald text-white">
+                <i class="fa-solid fa-check"></i>
+              </div>
+              <span class="mt-2 text-xs font-medium text-hospital-blue dark:text-hospital-teal">Examen</span>
+            </div>
+            <div class="w-14 h-0.5 mx-3 bg-hospital-emerald"></div>
+          </div>
+          <div class="flex items-center">
+            <div class="flex flex-col items-center">
+              <div class="h-12 w-12 rounded-full grid place-items-center text-sm font-semibold bg-hospital-blue text-white">
+                <span>3</span>
+              </div>
+              <span class="mt-2 text-xs font-medium text-hospital-blue dark:text-hospital-teal">Diagnostic</span>
+            </div>
+            <div class="w-14 h-0.5 mx-3 bg-gray-200 dark:bg-gray-700"></div>
+          </div>
+          <div class="flex items-center">
+            <div class="flex flex-col items-center">
+              <div class="h-12 w-12 rounded-full grid place-items-center text-sm font-semibold bg-gray-100 dark:bg-gray-700 text-gray-500">
+                <span>4</span>
+              </div>
+              <span class="mt-2 text-xs font-medium text-gray-500">Traitement</span>
+            </div>
+            <div class="w-14 h-0.5 mx-3 bg-gray-200 dark:bg-gray-700"></div>
+          </div>
+          <div class="flex items-center">
+            <div class="flex flex-col items-center">
+              <div class="h-12 w-12 rounded-full grid place-items-center text-sm font-semibold bg-gray-100 dark:bg-gray-700 text-gray-500">
+                <span>5</span>
+              </div>
+              <span class="mt-2 text-xs font-medium text-gray-500">Suivi</span>
+            </div>
           </div>
         </div>
       </section>
@@ -682,8 +1212,7 @@
         <h3 class="text-lg font-semibold mb-1">Aucun résultat</h3>
         <p class="text-gray-500 max-w-md mx-auto mb-5">Aucun patient ne correspond aux critères de recherche.
           Ajustez les filtres ou réessayez.</p>
-        <button class="px-4 py-2 bg-hospital-blue text-white rounded-lg hover:bg-blue-700"
-                @click="notify('info','Filtres','Réinitialisation des filtres')">Réinitialiser les filtres
+        <button class="px-4 py-2 bg-hospital-blue text-white rounded-lg hover:bg-blue-700" @click="notify('info','Filtres','Réinitialisation des filtres')">Réinitialiser les filtres
         </button>
       </section>
     </main>
@@ -695,420 +1224,192 @@
   </div>
 
   <!-- ===== Modal ===== -->
-  <transition name="fade">
-    <div v-if="showModal" class="fixed inset-0 z-50 grid place-items-center p-4">
-      <div class="absolute inset-0 bg-black/50" @click="showModal=false" aria-hidden="true"></div>
-      <div class="relative w-full max-w-lg bg-white dark:bg-gray-800 rounded-xl shadow-soft border border-gray-200 dark:border-gray-700">
-        <div class="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-          <h3 class="font-semibold">Confirmation requise</h3>
-          <button class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700" @click="showModal=false"
-                  aria-label="Fermer">
-            <i class="fa-solid fa-xmark"></i>
-          </button>
+  <div x-show="showModal" class="fixed inset-0 z-50 grid place-items-center p-4">
+    <div class="absolute inset-0 bg-black/50" @click="showModal=false" aria-hidden="true"></div>
+    <div class="relative w-full max-w-lg bg-white dark:bg-gray-800 rounded-xl shadow-soft border border-gray-200 dark:border-gray-700">
+      <div class="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+        <h3 class="font-semibold">Confirmation requise</h3>
+        <button class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700" @click="showModal=false" aria-label="Fermer">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div class="p-4">
+        <div class="flex items-start gap-3">
+          <div class="w-10 h-10 grid place-items-center rounded-full bg-primary-100 dark:bg-primary-900/40 text-primary-700 dark:text-primary-200">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+          </div>
+          <div>
+            <p class="text-sm text-gray-700 dark:text-gray-300">Êtes-vous sûr de vouloir effectuer cette
+              action ? Cette opération est irréversible.</p>
+          </div>
         </div>
-        <div class="p-4">
-          <div class="flex items-start gap-3">
-            <div class="w-10 h-10 grid place-items-center rounded-full bg-primary-100 dark:bg-primary-900/40 text-primary-700 dark:text-primary-200">
-              <i class="fa-solid fa-triangle-exclamation"></i>
-            </div>
-            <div>
-              <p class="text-sm text-gray-700 dark:text-gray-300">Êtes-vous sûr de vouloir effectuer cette
-                action ? Cette opération est irréversible.</p>
-            </div>
-          </div>
-          <div class="mt-5 flex justify-end gap-2">
-            <button class="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
-                    @click="showModal=false">Annuler
-            </button>
-            <button class="px-4 py-2 rounded-lg bg-hospital-rose text-white hover:bg-rose-700"
-                    @click="confirmAction">Confirmer
-            </button>
-          </div>
+        <div class="mt-5 flex justify-end gap-2">
+          <button class="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600" @click="showModal=false">Annuler</button>
+          <button class="px-4 py-2 rounded-lg bg-hospital-rose text-white hover:bg-rose-700" @click="confirmAction()">Confirmer</button>
         </div>
       </div>
     </div>
-  </transition>
+  </div>
 
   <!-- ===== Drawer (mobile / détails patient) ===== -->
-  <transition name="slide">
-    <div v-if="showDrawer" class="fixed inset-0 z-50">
-      <div class="absolute inset-0 bg-black/50" @click="showDrawer=false" aria-hidden="true"></div>
-      <aside class="absolute right-0 top-0 bottom-0 w-full max-w-md bg-white dark:bg-gray-800 shadow-xl flex flex-col">
-        <div class="px-4 py-4 border-b border-gray-200 dark:border-gray-700 flex items-start justify-between">
-          <h2 class="text-lg font-semibold">Informations du patient</h2>
-          <button class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700" @click="showDrawer=false"
-                  aria-label="Fermer le panneau">
-            <i class="fa-solid fa-xmark"></i>
-          </button>
-        </div>
-        <div class="p-4 overflow-y-auto custom-scrollbar space-y-6">
-          <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-            <div class="flex items-center mb-4">
-              <img :src="drawerPatient.avatar || 'https://randomuser.me/api/portraits/men/32.jpg'"
-                   class="w-12 h-12 rounded-full object-cover" alt="Patient"/>
-              <div class="ml-4">
-                <p class="font-medium">{{ drawerPatient.name || '—' }}</p>
-                <p class="text-sm text-gray-500">
-                  {{ (drawerPatient.age || '—') + ' ans • ID: ' + (drawerPatient.id || '—') }}</p>
-              </div>
-            </div>
-            <div class="grid grid-cols-2 gap-4 text-sm">
-              <div>
-                <p class="text-gray-500">Groupe sanguin</p>
-                <p class="font-medium">O+</p>
-              </div>
-              <div>
-                <p class="text-gray-500">Allergies</p>
-                <p class="font-medium">Pénicilline</p>
-              </div>
+  <div x-show="showDrawer" class="fixed inset-0 z-50">
+    <div class="absolute inset-0 bg-black/50" @click="showDrawer=false" aria-hidden="true"></div>
+    <aside class="absolute right-0 top-0 bottom-0 w-full max-w-md bg-white dark:bg-gray-800 shadow-xl flex flex-col">
+      <div class="px-4 py-4 border-b border-gray-200 dark:border-gray-700 flex items-start justify-between">
+        <h2 class="text-lg font-semibold">Informations du patient</h2>
+        <button class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700" @click="showDrawer=false" aria-label="Fermer le panneau">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div class="p-4 overflow-y-auto custom-scrollbar space-y-6">
+        <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+          <div class="flex items-center mb-4">
+            <img :src="drawerPatient.avatar || 'https://randomuser.me/api/portraits/men/32.jpg'" class="w-12 h-12 rounded-full object-cover" alt="Patient"/>
+            <div class="ml-4">
+              <p class="font-medium" x-text="drawerPatient.name || '—'"></p>
+              <p class="text-sm text-gray-500" x-text="(drawerPatient.age || '—') + ' ans • ID: ' + (drawerPatient.id || '—')"></p>
             </div>
           </div>
+          <div class="grid grid-cols-2 gap-4 text-sm">
+            <div>
+              <p class="text-gray-500">Groupe sanguin</p>
+              <p class="font-medium">O+</p>
+            </div>
+            <div>
+              <p class="text-gray-500">Allergies</p>
+              <p class="font-medium">Pénicilline</p>
+            </div>
+          </div>
+        </div>
 
-          <div>
-            <h3 class="text-sm font-semibold mb-2">Dernières consultations</h3>
-            <div class="space-y-3">
-              <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                <div>
-                  <p class="font-medium">Cardiologie</p>
-                  <p class="text-sm text-gray-500">15 Mars 2023</p>
-                </div>
-                <span class="px-2 py-1 text-xs rounded-full bg-hospital-emerald text-white">Terminé</span>
+        <div>
+          <h3 class="text-sm font-semibold mb-2">Dernières consultations</h3>
+          <div class="space-y-3">
+            <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+              <div>
+                <p class="font-medium">Cardiologie</p>
+                <p class="text-sm text-gray-500">15 Mars 2023</p>
               </div>
-              <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                <div>
-                  <p class="font-medium">Radiologie</p>
-                  <p class="text-sm text-gray-500">10 Mars 2023</p>
-                </div>
-                <span class="px-2 py-1 text-xs rounded-full bg-hospital-amber text-white">En attente</span>
+              <span class="px-2 py-1 text-xs rounded-full bg-hospital-emerald text-white">Terminé</span>
+            </div>
+            <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+              <div>
+                <p class="font-medium">Radiologie</p>
+                <p class="text-sm text-gray-500">10 Mars 2023</p>
               </div>
+              <span class="px-2 py-1 text-xs rounded-full bg-hospital-amber text-white">En attente</span>
             </div>
           </div>
         </div>
-      </aside>
-    </div>
-  </transition>
+      </div>
+    </aside>
+  </div>
 
   <!-- ===== Toasts ===== -->
   <div class="fixed bottom-4 right-4 space-y-3 z-50">
-    <transition-group name="fade" tag="div">
-      <div v-for="t in toasts" :key="t.id"
-           class="max-w-sm w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-soft overflow-hidden">
-        <div class="p-4 flex items-start gap-3">
-          <i :class="[
-                'text-lg mt-0.5',
-                t.type==='success' ? 'fa-solid fa-circle-check text-hospital-emerald'
-              : t.type==='error'   ? 'fa-solid fa-circle-exclamation text-hospital-rose'
-              :                      'fa-solid fa-circle-info text-hospital-blue'
-            ]"></i>
-          <div class="flex-1">
-            <p class="text-sm font-semibold">{{ t.title }}</p>
-            <p class="text-sm text-gray-600 dark:text-gray-300">{{ t.message }}</p>
-          </div>
-          <button class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700" @click="removeToast(t.id)"
-                  aria-label="Fermer">
-            <i class="fa-solid fa-xmark"></i>
-          </button>
+    <div class="max-w-sm w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-soft overflow-hidden">
+      <div class="p-4 flex items-start gap-3">
+        <i class="fa-solid fa-circle-check text-lg mt-0.5 text-hospital-emerald"></i>
+        <div class="flex-1">
+          <p class="text-sm font-semibold">Succès</p>
+          <p class="text-sm text-gray-600 dark:text-gray-300">Connexion réussie à CHU - MSHPCMU National</p>
         </div>
+        <button class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700" @click="removeToast(1)" aria-label="Fermer">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
       </div>
-    </transition-group>
+    </div>
+    <div class="max-w-sm w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-soft overflow-hidden">
+      <div class="p-4 flex items-start gap-3">
+        <i class="fa-solid fa-circle-info text-lg mt-0.5 text-hospital-blue"></i>
+        <div class="flex-1">
+          <p class="text-sm font-semibold">Information</p>
+          <p class="text-sm text-gray-600 dark:text-gray-300">Mise à jour des indicateurs</p>
+        </div>
+        <button class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700" @click="removeToast(2)" aria-label="Fermer">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+    </div>
   </div>
 </div>
 
 <script>
-  const { createApp, ref, onMounted } = Vue;
-
-  createApp({
-    setup() {
+  function hospitalApp() {
+    return {
       // ==== UI State ====
-      const darkMode = ref(false);
-      const sidebarCollapsed = ref(false);
-      const showNotifications = ref(false);
-      const showProfileMenu = ref(false);
-      const showModal = ref(false);
-      const showDrawer = ref(false);
-      const showTooltip = ref(null);
-      const activeTab = ref('patients');
-      const currentPage = ref('Tableau de bord');
-      const drawerPatient = ref({});
-
-      // User
-      const currentUser = ref({
-        name: 'Dr. Sophie Martin (Cardiologue)',
-        shortName: 'Dr. S. Martin',
-        role: 'Cardiologue',
-        avatar: 'https://randomuser.me/api/portraits/women/68.jpg'
-      });
-
-      // KPIs
-      const kpis = ref([
-        { id: 1, title: "Patients aujourd'hui", value: '42', change: '+12%', trend: 'up',  icon: 'fa-solid fa-user-injured',        loading: false },
-        { id: 2, title: "Taux d'occupation",     value: '78%', change: '+5%',  trend: 'up',  icon: 'fa-solid fa-bed',                 loading: false },
-        { id: 3, title: "Temps d'attente moyen", value: '18min', change: '-3%', trend: 'down',icon: 'fa-solid fa-clock',              loading: false },
-        { id: 4, title: "Alertes urgentes",      value: '3',   change: '+1',   trend: 'up',  icon: 'fa-solid fa-triangle-exclamation',loading: true  }
-      ]);
-
-      // Tabs
-      const tabs = ref([
-        {id: 'patients',  name: 'Patients',     badge: '42', badgeType: 'primary'},
-        {id: 'activity',  name: 'Activité',     badge: null, badgeType: null},
-        {id: 'analytics', name: 'Analytiques',  badge: null, badgeType: null},
-        {id: 'settings',  name: 'Paramètres',   badge: '3',  badgeType: 'danger'}
-      ]);
-
-      // Table Patients
-      const patients = ref([
-        { id: 'P-7741', name: 'Marie Lambert',  age: 34, service: 'Cardiologie', status: 'Admis',      lastUpdate: 'Il y a 2 h',  avatar: 'https://randomuser.me/api/portraits/women/32.jpg' },
-        { id: 'P-7842', name: 'Pierre Moreau',  age: 45, service: 'Pédiatrie',   status: 'En attente', lastUpdate: 'Il y a 30 min',avatar: 'https://randomuser.me/api/portraits/men/54.jpg' },
-        { id: 'P-8188', name: 'Claire Bernard', age: 28, service: 'Urgences',    status: 'Admis',      lastUpdate: 'Il y a 1 h',  avatar: 'https://randomuser.me/api/portraits/women/68.jpg' },
-        { id: 'P-7490', name: 'Antoine Petit',  age: 62, service: 'Chirurgie',   status: 'Admis',      lastUpdate: 'Il y a 3 h',  avatar: 'https://randomuser.me/api/portraits/men/32.jpg' },
-        { id: 'P-9012', name: 'Élise Dubois',   age: 29, service: 'Maternité',   status: 'En attente', lastUpdate: 'Il y a 45 min',avatar: 'https://randomuser.me/api/portraits/women/44.jpg' }
-      ]);
-
-      // Timeline
-      const timeline = ref([
-        { id: 1, type: 'admission', icon: 'fa-solid fa-user-plus',     user: 'Dr. Martin',  action: 'a admis',                     patient: 'Sophie Lambert', time: 'Il y a 2 h', date: '10:30', datetime: '2025-09-30T10:30' },
-        { id: 2, type: 'exam',      icon: 'fa-solid fa-stethoscope',   user: 'Dr. Lefebvre',action: 'a examiné',                   patient: 'Pierre Moreau',  time: 'Il y a 3 h', date: '09:45', datetime: '2025-09-30T09:45' },
-        { id: 3, type: 'lab',       icon: 'fa-solid fa-vial',          user: 'Lab. Central', action: 'a terminé les analyses de',  patient: 'Claire Bernard',  time: 'Il y a 5 h', date: '07:30', datetime: '2025-09-30T07:30' },
-        { id: 4, type: 'release',   icon: 'fa-solid fa-house',         user: 'Dr. Dubois',   action: 'a autorisé la sortie de',    patient: 'Antoine Petit',   time: 'Hier',       date: '16:20', datetime: '2025-09-29T16:20' }
-      ]);
-
-      // Stepper
-      const steps = ref([
-        {id: 1, name: 'Informations', status: 'completed'},
-        {id: 2, name: 'Examen',       status: 'completed'},
-        {id: 3, name: 'Diagnostic',   status: 'current'},
-        {id: 4, name: 'Traitement',   status: 'upcoming'},
-        {id: 5, name: 'Suivi',        status: 'upcoming'}
-      ]);
-
-      // Notifications & toasts
-      const notifications = ref([
-        { id: 1, type: 'urgent', icon: 'fa-solid fa-triangle-exclamation', title: 'Alerte stock',  message: 'Stock faible d’antibiotiques', time: 'Il y a 5 min' },
-        { id: 2, type: 'info',   icon: 'fa-solid fa-circle-info',          title: 'Nouveau message',message: 'Dr. Martin vous a écrit',      time: 'Il y a 15 min' },
-        { id: 3, type: 'info',   icon: 'fa-solid fa-calendar-check',       title: 'Rappel RDV',     message: 'RDV avec M. Dupont à 14h',     time: 'Il y a 1 h' }
-      ]);
-
-      const toasts = ref([
-        {id: 1, type: 'success', title: 'Succès',     message: 'Connexion réussie à CHU - MSHPCMU National'},
-        {id: 2, type: 'info',    title: 'Information',message: 'Mise à jour des indicateurs'}
-      ]);
-
-      // Sous-menus (ouverts)
-      const openGroups = ref(new Set());
-      const isOpen = (id) => openGroups.value.has(id);
-      const toggleSub = (id) => {
-        if (openGroups.value.has(id)) openGroups.value.delete(id);
-        else openGroups.value.add(id);
-      };
-
-      // Menu par sections (incluant Spécialités CI)
-      const menuSections = ref([
-        {
-          id: 'general',
-          title: 'Générale',
-          items: [
-            {
-              id: 'dashboard',
-              name: 'Tableau de bord',
-              icon: 'fa-solid fa-gauge-high',
-              link: '#',
-              active: true,
-              badge: kpis.value?.[0]?.value || '—',
-              badgeColor: 'bg-hospital-blue/10 text-hospital-blue'
-            },
-            { id: 'search', name: 'Recherche globale', icon: 'fa-solid fa-magnifying-glass', link: '#' }
-          ]
-        },
-        {
-          id: 'accueil',
-          title: 'Accueil',
-          items: [
-            { id: 'waiting-room', name: "Salle d'attente", icon: 'fa-solid fa-users', badge: '12', badgeColor: 'bg-red-100 text-red-600' },
-            { id: 'received', name: 'Patients reçus', icon: 'fa-solid fa-calendar-check', badge: '87', badgeColor: 'bg-green-100 text-green-600' },
-            { id: 'appointments', name: 'Rendez-vous', icon: 'fa-solid fa-calendar-days' }
-          ]
-        },
-        {
-          id: 'consultation',
-          title: 'Consultation',
-          items: [
-            { id: 'consult-list', name: 'Liste Consultations', icon: 'fa-solid fa-stethoscope', badge: '24', badgeColor: 'bg-blue-100 text-blue-600' }
-          ]
-        },
-        {
-          id: 'urgence',
-          title: 'Urgences',
-          items: [
-            { id: 'urgences-list', name: 'Liste des Urgences', icon: 'fa-solid fa-truck-medical', badge: '5', badgeColor: 'bg-red-100 text-red-600' }
-          ]
-        },
-        {
-          id: 'hospitalisation',
-          title: 'Hospitalisation',
-          items: [
-            { id: 'hospi-current', name: 'Hospitalisations en cours', icon: 'fa-solid fa-bed-pulse', badge: '18', badgeColor: 'bg-red-100 text-red-600' },
-            { id: 'care-follow', name: 'Suivi soins', icon: 'fa-solid fa-clock-rotate-left' },
-            { id: 'hospi-patients', name: 'Patients hospitalisés', icon: 'fa-solid fa-bed', badge: '64', badgeColor: 'bg-emerald-100 text-emerald-600' },
-            { id: 'hospi-units', name: "Unités d'hospitalisation", icon: 'fa-solid fa-hospital-user' }
-          ]
-        },
-        {
-          id: 'suivi',
-          title: 'Suivi Patients',
-          items: [
-            { id: 'bilan-init', name: 'Bilans Initiaux', icon: 'fa-solid fa-file-arrow-up', badge: '9', badgeColor: 'bg-amber-100 text-amber-600' },
-            { id: 'suivi-patients', name: 'Suivi des Patients', icon: 'fa-solid fa-folder-tree', badge: '4', badgeColor: 'bg-red-100 text-red-600' }
-          ]
-        },
-        {
-          id: 'maladies',
-          title: 'Maladies sous surveillance',
-          items: [
-            {
-              id: 'diseases',
-              name: 'Pathologies',
-              icon: 'fa-solid fa-virus',
-              children: [
-                { id: 'mal-1', name: 'Paludisme',   icon: 'fa-solid fa-bug',        link: '#', badge: '3' },
-                { id: 'mal-2', name: 'Tuberculose', icon: 'fa-solid fa-lungs',      link: '#', badge: '1' },
-                { id: 'mal-3', name: 'COVID-19',    icon: 'fa-solid fa-virus',      link: '#', badge: '0' }
-              ]
-            }
-          ]
-        },
-        {
-          id: 'laboratoire',
-          title: 'Laboratoire',
-          items: [
-            { id: 'samples', name: 'Prélèvements', icon: 'fa-solid fa-vial' },
-            { id: 'lab-requests', name: "Demande d'Analyse", icon: 'fa-solid fa-flask-vial', badge: '7', badgeColor: 'bg-red-100 text-red-600' },
-            { id: 'lab-done', name: 'Analyses effectuées', icon: 'fa-solid fa-check-double', badge: '52', badgeColor: 'bg-emerald-100 text-emerald-600' }
-          ]
-        },
-        {
-          id: 'pharmacie',
-          title: 'Pharmacie',
-          items: [
-            { id: 'medications', name: 'Médicaments', icon: 'fa-solid fa-prescription-bottle-medical' }
-          ]
-        },
-        {
-          id: 'admin',
-          title: 'Administration',
-          items: [
-            { id: 'employees', name: 'Gestion des Employés', icon: 'fa-solid fa-user-circle' },
-            { id: 'roles',     name: 'Gestion des Rôles',    icon: 'fa-solid fa-user-shield' }
-          ]
-        },
-        /* ===== Nouvelle section : Spécialités (CI — Ordre des Médecins) ===== */
-        {
-          id: 'spec-ci',
-          title: 'Spécialités (CI — Ordre des Médecins)',
-          items: [
-            {
-              id: 'specialites-ci',
-              name: 'Spécialités médicales',
-              icon: 'fa-solid fa-briefcase-medical',
-              children: [
-                { id: 'allergologie',   name: 'Allergologie',                  icon: 'fa-solid fa-lungs' },
-                { id: 'andrologie',     name: 'Andrologie',                    icon: 'fa-solid fa-venus-mars' },
-                { id: 'anesthesie',     name: 'Anesthésie-Réanimation',        icon: 'fa-solid fa-syringe' },
-                { id: 'biologie',       name: 'Biologie médicale',             icon: 'fa-solid fa-dna' },
-                { id: 'cardiologie',    name: 'Cardiologie',                   icon: 'fa-solid fa-heart-pulse' },
-                { id: 'chirurgie',      name: 'Chirurgie',                      icon: 'fa-solid fa-scissors' },
-                { id: 'dermatologie',   name: 'Dermatologie',                   icon: 'fa-solid fa-sun' },
-                { id: 'endocrino',      name: 'Endocrinologie',                 icon: 'fa-solid fa-vial' },
-                { id: 'geriatrie',      name: 'Gériatrie',                      icon: 'fa-solid fa-person-cane' },
-                { id: 'gastro',         name: 'Gastro-entérologie',             icon: 'fa-solid fa-clipboard' },
-                { id: 'gyneco',         name: 'Gynécologie-Obstétrique',        icon: 'fa-solid fa-person-pregnant' },
-                { id: 'imagerie',       name: 'Imagerie médicale / Radiologie', icon: 'fa-solid fa-camera' },
-                { id: 'nephro',         name: 'Néphrologie',                    icon: 'fa-solid fa-droplet' },
-                { id: 'neuro',          name: 'Neurologie',                     icon: 'fa-solid fa-brain' },
-                { id: 'nutrition',      name: 'Nutrition',                      icon: 'fa-solid fa-apple-whole' },
-                { id: 'ophtalmo',       name: 'Ophtalmologie',                  icon: 'fa-solid fa-eye' },
-                { id: 'orl',            name: 'ORL (Oto-Rhino-Laryngologie)',   icon: 'fa-solid fa-ear-listen' },
-                { id: 'pediatrie',      name: 'Pédiatrie',                      icon: 'fa-solid fa-baby' },
-                { id: 'pneumo',         name: 'Pneumologie',                    icon: 'fa-solid fa-lungs' },
-                { id: 'psy',            name: 'Psychiatrie',                    icon: 'fa-solid fa-brain' },
-                { id: 'santepub',       name: 'Santé publique',                 icon: 'fa-solid fa-people-group' },
-                { id: 'stomatologie',   name: 'Stomatologie',                   icon: 'fa-solid fa-tooth' }
-              ]
-            }
-          ]
-        }
-      ]);
-
-      // Helpers Toasts
-      const removeToast = (id) => { toasts.value = toasts.value.filter(t => t.id !== id); };
-      const addToast = (type, title, message) => {
-        const id = Date.now();
-        toasts.value.push({id, type, title, message});
-        setTimeout(() => removeToast(id), 5000);
-      };
-      const notify = (type, title, message) => addToast(type, title, message);
-
+      darkMode: false,
+      sidebarCollapsed: false,
+      showNotifications: false,
+      showProfileMenu: false,
+      showModal: false,
+      showDrawer: false,
+      showTooltip: null,
+      activeTab: 'patients',
+      currentPage: 'Tableau de bord',
+      drawerPatient: {},
+      openGroups: new Set(['specialites-ci']),
+      
       // Methods
-      const toggleDarkMode = () => {
-        darkMode.value = !darkMode.value;
-        document.documentElement.classList.toggle('dark', darkMode.value);
-      };
-      const toggleSidebar = () => { sidebarCollapsed.value = !sidebarCollapsed.value; };
-      const toggleNotifications = () => { showNotifications.value = !showNotifications.value; showProfileMenu.value = false; };
-      const toggleProfileMenu = () => { showProfileMenu.value = !showProfileMenu.value; showNotifications.value = false; };
-
-      // Activer un item (fonctionne pour item ou child)
-      const activate = (target) => {
-        menuSections.value.forEach(section => {
-          section.items.forEach(item => {
-            item.active = false;
-            if (item.children) item.children.forEach(ch => ch.active = false);
-            if (item.children && item.children.some(ch => ch.id === target.id)) {
-              openGroups.value.add(item.id);
-            }
-          });
-        });
-        target.active = true;
-        currentPage.value = target.name;
-      };
-
-      const closeOverlays = () => { showModal.value = false; showDrawer.value = false; showNotifications.value = false; showProfileMenu.value = false; };
-      const confirmAction = () => { notify('success','Action confirmée','Votre action a été prise en compte.'); showModal.value = false; };
-      const openDrawerWith = (p) => { drawerPatient.value = p; showDrawer.value = true; };
-
-      // Mounted
-      onMounted(() => {
-        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) darkMode.value = true;
-        document.documentElement.classList.toggle('dark', darkMode.value);
-
+      toggleDarkMode() {
+        this.darkMode = !this.darkMode;
+        document.documentElement.classList.toggle('dark', this.darkMode);
+      },
+      toggleSidebar() {
+        this.sidebarCollapsed = !this.sidebarCollapsed;
+      },
+      toggleNotifications() {
+        this.showNotifications = !this.showNotifications;
+        this.showProfileMenu = false;
+      },
+      toggleProfileMenu() {
+        this.showProfileMenu = !this.showProfileMenu;
+        this.showNotifications = false;
+      },
+      isOpen(id) {
+        return this.openGroups.has(id);
+      },
+      toggleSub(id) {
+        if (this.openGroups.has(id)) {
+          this.openGroups.delete(id);
+        } else {
+          this.openGroups.add(id);
+        }
+      },
+      removeToast(id) {
+        // Implementation would remove toast from array
+      },
+      notify(type, title, message) {
+        console.log(`Notification: ${type} - ${title} - ${message}`);
+      },
+      closeOverlays() {
+        this.showModal = false;
+        this.showDrawer = false;
+        this.showNotifications = false;
+        this.showProfileMenu = false;
+      },
+      confirmAction() {
+        this.notify('success','Action confirmée','Votre action a été prise en compte.');
+        this.showModal = false;
+      },
+      openDrawerWith(p) {
+        this.drawerPatient = p;
+        this.showDrawer = true;
+      },
+      init() {
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+          this.darkMode = true;
+        }
+        document.documentElement.classList.toggle('dark', this.darkMode);
+        
         // Ouvrir la section Spécialités au chargement
-        openGroups.value.add('specialites-ci');
-
-        // Fin de chargement d’un KPI simulée
-        setTimeout(() => {
-          const k = kpis.value.find(x => x.id === 4);
-          if (k) k.loading = false;
-        }, 1500);
-
+        this.openGroups.add('specialites-ci');
+        
         // Toast de bienvenue
-        setTimeout(() => notify('info', 'Bienvenue', 'Vous êtes connecté(e) à CHU - MSHPCMU National'), 900);
-      });
-
-      return {
-        // state
-        darkMode, sidebarCollapsed, showNotifications, showProfileMenu, showModal, showDrawer, showTooltip,
-        activeTab, currentPage, drawerPatient,
-        // user & menu
-        currentUser, menuSections,
-        // data
-        kpis, tabs, patients, timeline, steps, notifications, toasts,
-        // submenu helpers
-        isOpen, toggleSub,
-        // methods
-        toggleDarkMode, toggleSidebar, toggleNotifications, toggleProfileMenu,
-        removeToast, addToast, notify, activate, closeOverlays, confirmAction, openDrawerWith
-      };
+        setTimeout(() => this.notify('info', 'Bienvenue', 'Vous êtes connecté(e) à CHU - MSHPCMU National'), 900);
+      }
     }
-  }).mount('#app');
+  }
 </script>
 </body>
 </html>

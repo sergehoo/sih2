@@ -1,75 +1,162 @@
 # /Users/ogahserge/Documents/sigh/hospital/models.py
+import json
 import uuid
 
+from django.contrib.postgres.fields import ArrayField
 from django.core.exceptions import ValidationError
+from django.core.validators import RegexValidator, EmailValidator
 from django.db import models
 
 from django.db import models
+from django.db.models import F
+from django.db.models.functions import Lower
 from django.utils import timezone
 from .base import UUIDModel, TimeStampedModel
 from django.contrib.gis.db import models as gmodels
 from django.utils.translation import gettext_lazy as _
-from django.contrib.postgres.indexes import GistIndex
-
+from django.contrib.postgres.indexes import GistIndex, GinIndex
+from django.contrib.gis.db import models
 from .base import TenantScopedModel
 
 
+class ScopeLevel(models.TextChoices):
+    SERVICE = "SERVICE", _("Service")
+    DISTRICT = "DISTRICT", _("District")
+    REGION = "REGION", _("Région sanitaire")
+    POLE = "POLE", _("Pôle régional")
+    NATIONAL = "NATIONAL", _("National")
+
+
+phone_e164 = RegexValidator(
+    # regex=r'^\+?[1-9]\d{6,14}$',
+    regex=r'^\+[1-9]\d{6,14}$',
+    message=_("Numéro de téléphone invalide (format E.164 attendu, ex: +2250700000000)."),
+)
+
+
 class UserProfile(UUIDModel, TimeStampedModel):
-    # "sub" Keycloak (ou autre IdP)
-    facility = models.ForeignKey('Facility', null=True, blank=True, on_delete=models.SET_NULL,
-                                 related_name="users")  # +++
-    idp_sub = models.CharField(max_length=128, unique=True, db_index=True)
-    username = models.CharField(max_length=150, db_index=True)
-    email = models.EmailField(null=True, blank=True)
-    phone = models.CharField(max_length=32, null=True, blank=True)
+    # — Identité & rattachements —
+    facility = models.ForeignKey(
+        'Facility', null=True, blank=True, on_delete=models.SET_NULL, related_name="users"
+    )
+    idp_sub = models.CharField(  # sub Keycloak (stable, unique)
+        max_length=128, unique=True, db_index=True,
+        help_text=_("Identifiant 'sub' de l'IdP (Keycloak).")
+    )
+    username = models.CharField(
+        max_length=150, db_index=True,
+        help_text=_("Nom d'utilisateur applicatif (peut dupliquer celui de l'IdP).")
+    )
+    email = models.EmailField(
+        null=True, blank=True, validators=[EmailValidator()]
+    )
+    phone = models.CharField(
+        max_length=32, null=True, blank=True, validators=[phone_e164],
+        help_text=_("Stocker au format E.164 si possible (ex: +2250700000000).")
+    )
 
-    # Attributs d’accès (ABAC)
-    tenant_key = models.CharField(max_length=64, null=True, blank=True)  # CHU personnel
-    scope_level = models.CharField(max_length=20, default='SERVICE')  # SERVICE/DISTRICT/REGION/POLE/NATIONAL
-    departments = models.JSONField(default=list, blank=True)  # ["chirurgie","labo"]
+    # — ABAC / Tenancy —
+    tenant_key = models.CharField(
+        max_length=64, null=True, blank=True,
+        help_text=_("Clé locataire / établissement (ex: CHU-COCODY).")
+    )
+    scope_level = models.CharField(
+        max_length=20, choices=ScopeLevel.choices, default=ScopeLevel.SERVICE
+    )
 
-    # Lien vers Patient (si compte patient)
-    patient_mpi = models.CharField(max_length=128, null=True, blank=True)  # identifiant MPI pseudonymisé
+    # — Domaines & rôles (ArrayField Postgres = +perfs +opérateurs) —
+    # si tu veux rester 100% portable DB, remets JSONField(default=list) + GinIndex sur JSONB
+    departments = models.JSONField(default=list, blank=True)
+    roles = models.JSONField(default=list, blank=True)
 
-    # Rôles (copie utile pour filtrages rapides côté app, la vérité vient du JWT)
-    roles = models.JSONField(default=list, blank=True)  # ["ROLE_MEDECIN","ROLE_PATIENT",...]
+    # — Lien patient —
+    patient_mpi = models.CharField(
+        max_length=128, null=True, blank=True, db_index=True,
+        help_text=_("Identifiant MPI pseudonymisé si utilisateur = patient.")
+    )
 
     class Meta:
         verbose_name = _("Profil utilisateur")
         verbose_name_plural = _("Profils utilisateurs")
+        # Index usuels
         indexes = [
             models.Index(fields=["tenant_key", "scope_level"]),
             models.Index(fields=["username"]),
+            GinIndex(fields=["departments"]),  # requêtes @> '{}' , ? 'chirurgie' etc.
+            GinIndex(fields=["roles"]),
+        ]
+        # Contrainte d'unicité *par tenant* (username insensible à la casse)
+        constraints = [
+            models.UniqueConstraint(
+                Lower("username"), "tenant_key",
+                name="uq_userprofile_username_ci_per_tenant",
+                violation_error_message=_("Ce username existe déjà sur ce tenant.")
+            ),
         ]
 
+    # — Dunders & helpers —
+    def __str__(self):
+        label = self.email or self.username or self.idp_sub
+        return f"{label} ({self.tenant_key or 'no-tenant'})"
 
-class Pole(UUIDModel, TimeStampedModel):
+    @property
+    def is_patient(self) -> bool:
+        return "ROLE_PATIENT" in (self.roles or [])
+
+    @property
+    def is_staff_like(self) -> bool:
+        return any(r in (self.roles or []) for r in ["ROLE_ADMIN", "ROLE_SUPERVISEUR", "ROLE_DIRECTION"])
+
+    def has_role(self, role: str) -> bool:
+        return role in (self.roles or [])
+
+    def in_department(self, dept: str) -> bool:
+        return dept in (self.departments or [])
+
+
+class Pole(models.Model):
     name = gmodels.CharField(max_length=128, unique=True)
 
     class Meta:
         verbose_name = _("Pôle régional")
         verbose_name_plural = _("Pôles régionaux")
 
+    def __str__(self):
+        return self.name
 
-class Region(UUIDModel, TimeStampedModel):
-    pole = gmodels.ForeignKey(Pole, on_delete=gmodels.PROTECT, related_name="regions")
+
+class Region(models.Model):
     name = gmodels.CharField(max_length=128)
+    poles = gmodels.ForeignKey(Pole, on_delete=gmodels.PROTECT, related_name="regions")
 
     class Meta:
         verbose_name = _("Région sanitaire")
         verbose_name_plural = _("Régions sanitaires")
-        unique_together = ("pole", "name")
+
+    def __str__(self):
+        return self.name
 
 
-class District(UUIDModel, TimeStampedModel):
-    region = gmodels.ForeignKey(Region, on_delete=gmodels.PROTECT, related_name="districts")
-    name = gmodels.CharField(max_length=128)
-    geom = gmodels.MultiPolygonField(srid=4326, null=True, blank=True)
+class District(models.Model):
+    name = models.CharField(max_length=100, null=True, blank=True, db_index=True)
+    region = models.ForeignKey(Region, on_delete=models.CASCADE, null=True, blank=True, db_index=True)
+    geom = models.PointField(null=True, blank=True, db_index=True)
+    geojson = models.JSONField(null=True, blank=True, db_index=True)
+    previous_rank = models.IntegerField(null=True, blank=True)
 
-    class Meta:
-        verbose_name = _("District sanitaire")
-        verbose_name_plural = _("Districts sanitaires")
-        unique_together = ("region", "name")
+    def clean(self):
+        # Valider le champ `geojson` si présent
+        if self.geojson:
+            try:
+                json.dumps(self.geojson)  # Vérifie que le contenu est JSON
+            except ValueError:
+                raise ValidationError("Le champ GeoJSON n'est pas valide.")
+
+    def __str__(self):
+        return f'{self.nom}---->{self.region}'
+
+    def __str__(self):
+        return f'{self.nom}---->{self.region}'
 
 
 class Commune(UUIDModel, TimeStampedModel):
@@ -84,29 +171,24 @@ class Commune(UUIDModel, TimeStampedModel):
         unique_together = ("district", "name")
 
 
+class FacilityType(models.Model):
+    name = models.CharField(max_length=128)
+
+    def __str__(self):
+        return self.name
+
+
 class Facility(UUIDModel, TimeStampedModel):
-    code = gmodels.CharField(max_length=46,default=uuid.uuid4, unique=True, db_index=True)  # Code unique (MSHP, interne…)
+    code = gmodels.CharField(max_length=46, default=uuid.uuid4, unique=True,
+                             db_index=True)  # Code unique (MSHP, interne…)
     name = gmodels.CharField(max_length=255)  # Nom de l’hôpital
     is_chu = gmodels.BooleanField(default=False)  # True si CHU
-    type = gmodels.CharField(  # Type d’établissement
-        max_length=32,
-        choices=[
-            ("CHU", "Centre Hospitalier Universitaire"),
-            ("CHR", "Centre Hospitalier Régional"),
-            ("HOSPITAL", "Hôpital Général"),
-            ("CS", "Centre de Santé"),
-            ("LAB", "Laboratoire"),
-            ("PHARMA", "Pharmacie"),
-        ],
-        default="HOSPITAL",
-    )
+    type = gmodels.ForeignKey(FacilityType, on_delete=gmodels.PROTECT, related_name="facilities")
     active = gmodels.BooleanField(default=True)
     parent = gmodels.ForeignKey("self", null=True, blank=True, on_delete=gmodels.PROTECT, related_name="children")
     # Localisation & rattachements
     location = gmodels.PointField(srid=4326, null=True, blank=True)
     commune = gmodels.ForeignKey("Commune", on_delete=gmodels.PROTECT, null=True, blank=True)
-    district = gmodels.ForeignKey("District", on_delete=gmodels.PROTECT, null=True, blank=True)
-    region = gmodels.ForeignKey("Region", on_delete=gmodels.PROTECT, null=True, blank=True)
 
     def root(self):
         n = self
@@ -118,22 +200,17 @@ class Facility(UUIDModel, TimeStampedModel):
         verbose_name = _("Établissement de santé")
         verbose_name_plural = _("Établissements de santé")
         indexes = [
-            gmodels.Index(fields=["code"]),  # redondant avec unique mais ok
-            gmodels.Index(fields=["type"]),
-            gmodels.Index(fields=["active"]),
-            gmodels.Index(fields=["parent"]),
-            gmodels.Index(fields=["region"]),
-            gmodels.Index(fields=["district"]),
-            gmodels.Index(fields=["commune"]),
-            gmodels.Index(fields=["name"]),
-            GistIndex(fields=["location"]),  # <— index spatial GIST
+            models.Index(fields=["code"]),  # redondant avec unique mais ok
+            models.Index(fields=["type"]),
+            models.Index(fields=["active"]),
+            models.Index(fields=["parent"]),
+            models.Index(fields=["commune"]),
+            models.Index(fields=["name"]),
+            GistIndex(fields=["location"]),
+            # <— index spatial GIST
         ]
         # Exemple de contrainte logique simple
         constraints = [
-            gmodels.CheckConstraint(
-                check=~gmodels.Q(is_chu=True) | gmodels.Q(type="CHU"),
-                name="facility_chu_implies_type_chu",
-            ),
             gmodels.CheckConstraint(
                 check=~gmodels.Q(parent=models.F("id")),
                 name="facility_parent_not_self",
@@ -141,12 +218,17 @@ class Facility(UUIDModel, TimeStampedModel):
         ]
 
     def clean(self):
-        # Cohérence métier : si CHU, le type doit être CHU
-        if self.is_chu and self.type != "CHU":
-            raise ValidationError("Un établissement marqué CHU doit avoir type='CHU'.")
+        """
+        Cohérence métier : si l'établissement est marqué CHU, alors son type doit être 'CHU'.
+        (Validation applicative, non faisable proprement en contrainte DB avec FK)"""
+        super().clean()
+
+        if self.is_chu and (not self.type or (self.type.name or "").upper() != "CHU"):
+            raise ValidationError(_("Un établissement marqué CHU doit avoir un type 'CHU'."))
 
     def __str__(self):
-        return f"{self.name} [{self.code}]"
+        # évite d'accéder à self.type pendant la fenêtre de migration
+        return self.code or self.name or str(self.pk)
 
 
 class Department(UUIDModel, TimeStampedModel, TenantScopedModel):
@@ -208,7 +290,7 @@ class Patient(UUIDModel, TimeStampedModel):
     """
     # Identité pseudonymisée
     mpi = models.CharField(max_length=128, unique=True, db_index=True)
-#CMU
+    # CMU
     # (Optionnel) Nom(s) non sensibles / initiales si besoin (éviter le PII clair)
     given_name = models.CharField(max_length=120, null=True, blank=True)
     family_name = models.CharField(max_length=120, null=True, blank=True)
@@ -221,6 +303,8 @@ class Patient(UUIDModel, TimeStampedModel):
     )
 
     # Contact minimal (hashés si sensibles)
+    cmu = models.CharField(max_length=128, null=True, blank=True)
+    cni = models.CharField(max_length=128, null=True, blank=True)
     phone_hash = models.CharField(max_length=128, null=True, blank=True)
     national_id_hash = models.CharField(max_length=128, null=True, blank=True)
 
@@ -239,6 +323,7 @@ class Patient(UUIDModel, TimeStampedModel):
 
     # Statut vital
     is_deceased = models.BooleanField(default=False, db_index=True)
+    classified = models.BooleanField(default=False, db_index=True)
     death_date = models.DateField(null=True, blank=True)
 
     class Meta:
@@ -644,6 +729,7 @@ class Procedure(UUIDModel, TimeStampedModel, TenantScopedModel):
 
 # 3) DiagnosticReport : via encounter -> facility
 class DiagnosticReport(UUIDModel, TimeStampedModel, TenantScopedModel):
+    facility = models.ForeignKey(Facility, on_delete=models.PROTECT, related_name="diagnostic_reports")
     encounter = models.ForeignKey(Encounter, on_delete=models.PROTECT, related_name="reports")
     modality = models.CharField(max_length=24, default="LAB")  # LAB, IMG...
     status = models.CharField(max_length=24, default="FINAL")
@@ -735,7 +821,7 @@ class Invoice(UUIDModel, TimeStampedModel, TenantScopedModel):
     issued_at = models.DateTimeField(null=True, blank=True, db_index=True)
 
     def _derive_tenant_key(self):
-        if self.encounter_id and self.encounter and self.encounter.facility_id:
+        if self.encounter_id and self.encounter:
             self.tenant_key = self.encounter.facility.root().code
 
     class Meta:

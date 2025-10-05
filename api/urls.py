@@ -15,7 +15,6 @@ router.register(r"regions", RegionViewSet, basename="region")
 router.register(r"districts", DistrictViewSet, basename="district")
 router.register(r"communes", CommuneViewSet, basename="commune")
 
-
 # Patient
 router.register(r"patients", PatientViewSet, basename="patient")
 router.register(r"patient-residences", PatientResidenceViewSet, basename="patient-residence")
@@ -34,7 +33,6 @@ me_router.register(r"invoices", MyInvoicesViewSet, basename="me-invoices")
 
 
 urlpatterns = [
-
     path("v1/", include(router.urls)),
     path("v1/me/", include(me_router.urls)),
 ]

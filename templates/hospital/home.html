@@ -1,0 +1,595 @@
+    {% extends 'layout/base.html' %}
+
+
+{% block content %}
+           <div class="flex-1 flex flex-col min-w-0">
+    <!-- Topbar -->
+    <header class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 md:px-6 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <button class="md:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700" @click="showDrawer = true" aria-label="Ouvrir le panneau">
+          <i class="fa-solid fa-bars"></i>
+        </button>
+        <h2 class="text-lg font-semibold">Tableau de bord</h2>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <!-- Search -->
+        <label class="hidden md:flex items-center bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg px-3">
+          <i class="fa-solid fa-magnifying-glass text-gray-400"></i>
+          <input placeholder="Rechercher un patient, dossier, acte…" class="px-2 py-1 bg-transparent outline-none w-64 text-sm"/>
+        </label>
+
+        <!-- Theme -->
+        <button @click="toggleDarkMode()" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700" aria-label="Basculer le thème">
+          <i :class="darkMode ? 'fa-solid fa-sun' : 'fa-solid fa-moon'"></i>
+        </button>
+
+        <!-- Notifs -->
+        <div class="relative">
+          <button @click="toggleNotifications()" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700" aria-haspopup="true" :aria-expanded="showNotifications.toString()" aria-label="Notifications">
+            <i class="fa-regular fa-bell"></i>
+            <span class="absolute -top-1 -right-1 bg-hospital-rose text-white text-[10px] rounded-full min-w-[18px] h-[18px] px-1 grid place-items-center">3</span>
+          </button>
+
+          <div x-show="showNotifications" class="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-40">
+            <div class="p-3 border-b border-gray-200 dark:border-gray-700">
+              <h3 class="font-semibold">Notifications</h3>
+            </div>
+            <div class="max-h-96 overflow-y-auto custom-scrollbar">
+              <button class="w-full text-left p-4 border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
+                <div class="flex items-start">
+                  <div class="p-2 rounded-lg shrink-0 bg-hospital-rose text-white">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                  </div>
+                  <div class="ml-3">
+                    <p class="font-medium">Alerte stock</p>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">Stock faible d'antibiotiques</p>
+                    <p class="text-xs text-gray-500 mt-1">Il y a 5 min</p>
+                  </div>
+                </div>
+              </button>
+              <button class="w-full text-left p-4 border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
+                <div class="flex items-start">
+                  <div class="p-2 rounded-lg shrink-0 bg-primary-100 text-primary-700 dark:bg-primary-900 dark:text-primary-300">
+                    <i class="fa-solid fa-circle-info"></i>
+                  </div>
+                  <div class="ml-3">
+                    <p class="font-medium">Nouveau message</p>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">Dr. Martin vous a écrit</p>
+                    <p class="text-xs text-gray-500 mt-1">Il y a 15 min</p>
+                  </div>
+                </div>
+              </button>
+              <button class="w-full text-left p-4 border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
+                <div class="flex items-start">
+                  <div class="p-2 rounded-lg shrink-0 bg-primary-100 text-primary-700 dark:bg-primary-900 dark:text-primary-300">
+                    <i class="fa-solid fa-calendar-check"></i>
+                  </div>
+                  <div class="ml-3">
+                    <p class="font-medium">Rappel RDV</p>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">RDV avec M. Dupont à 14h</p>
+                    <p class="text-xs text-gray-500 mt-1">Il y a 1 h</p>
+                  </div>
+                </div>
+              </button>
+            </div>
+            <div class="p-2">
+              <button class="w-full py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-primary-600 dark:text-primary-300">
+                Voir toutes les notifications
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Profil -->
+        <div class="relative">
+          <button @click="toggleProfileMenu()" class="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700" aria-haspopup="true" :aria-expanded="showProfileMenu.toString()">
+            <img src="https://randomuser.me/api/portraits/women/68.jpg" class="w-8 h-8 rounded-full" alt="Avatar"/>
+            <span class="hidden sm:inline font-medium">Dr. S. Martin</span>
+            <i class="fa-solid fa-chevron-down text-xs"></i>
+          </button>
+
+          <div x-show="showProfileMenu" class="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-40">
+            <div class="p-2">
+              <a href="#" class="flex items-center px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
+                <i class="fa-solid fa-user mr-3"></i> Mon profil
+              </a>
+              <a href="#" class="flex items-center px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
+                <i class="fa-solid fa-cog mr-3"></i> Paramètres
+              </a>
+              <div class="my-1 border-t border-gray-200 dark:border-gray-700"></div>
+              <button class="w-full flex items-center px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700" @click="notify('success','Déconnexion','Vous avez été déconnecté(e)')">
+                <i class="fa-solid fa-arrow-right-from-bracket mr-3"></i> Déconnexion
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Content -->
+    <main class="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-6">
+      <!-- Filtres -->
+      <section class="mb-6 bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4">
+        <div class="flex flex-wrap items-center justify-between gap-4">
+          <div class="flex flex-wrap items-center gap-3">
+            <h3 class="font-semibold">Filtres :</h3>
+            <div class="flex flex-wrap gap-2">
+              <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-primary-100 text-primary-900 dark:bg-primary-900/40 dark:text-primary-200">
+                Aujourd'hui
+                <button class="ml-2" @click="notify('info','Filtre retiré','Période: Aujourd'hui retirée')"><i class="fa-solid fa-xmark"></i></button>
+              </span>
+              <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-hospital-blue text-white">
+                Urgences
+                <button class="ml-2" @click="notify('info','Filtre retiré','Service Urgences retiré')"><i class="fa-solid fa-xmark"></i></button>
+              </span>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <select class="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700">
+              <option>Aujourd'hui</option>
+              <option>Cette semaine</option>
+              <option>Ce mois</option>
+              <option>Cette année</option>
+            </select>
+            <button class="px-4 py-2 bg-hospital-teal text-white rounded-lg hover:bg-teal-700" @click="notify('success','Export','Export en cours…')">
+              <i class="fa-solid fa-download mr-2"></i>Exporter
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- KPIs -->
+      <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div class="card-hover bg-white dark:bg-gray-800 rounded-xl shadow-sm p-5 border-l-4 border-hospital-emerald">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm text-gray-500 dark:text-gray-400">Patients aujourd'hui</p>
+              <h3 class="text-2xl font-extrabold mt-1">42</h3>
+            </div>
+            <div class="p-3 rounded-lg bg-emerald-100 text-hospital-emerald dark:bg-emerald-900/30">
+              <i class="fa-solid fa-user-injured"></i>
+            </div>
+          </div>
+          <div class="mt-3 flex items-center">
+            <span class="text-sm font-medium text-hospital-emerald">
+              <i class="fa-solid fa-arrow-up mr-1"></i>+12%
+            </span>
+            <span class="text-sm text-gray-500 dark:text-gray-400 ml-2">vs période précédente</span>
+          </div>
+        </div>
+        <div class="card-hover bg-white dark:bg-gray-800 rounded-xl shadow-sm p-5 border-l-4 border-hospital-emerald">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm text-gray-500 dark:text-gray-400">Taux d'occupation</p>
+              <h3 class="text-2xl font-extrabold mt-1">78%</h3>
+            </div>
+            <div class="p-3 rounded-lg bg-emerald-100 text-hospital-emerald dark:bg-emerald-900/30">
+              <i class="fa-solid fa-bed"></i>
+            </div>
+          </div>
+          <div class="mt-3 flex items-center">
+            <span class="text-sm font-medium text-hospital-emerald">
+              <i class="fa-solid fa-arrow-up mr-1"></i>+5%
+            </span>
+            <span class="text-sm text-gray-500 dark:text-gray-400 ml-2">vs période précédente</span>
+          </div>
+        </div>
+        <div class="card-hover bg-white dark:bg-gray-800 rounded-xl shadow-sm p-5 border-l-4 border-hospital-rose">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm text-gray-500 dark:text-gray-400">Temps d'attente moyen</p>
+              <h3 class="text-2xl font-extrabold mt-1">18min</h3>
+            </div>
+            <div class="p-3 rounded-lg bg-rose-100 text-hospital-rose dark:bg-rose-900/30">
+              <i class="fa-solid fa-clock"></i>
+            </div>
+          </div>
+          <div class="mt-3 flex items-center">
+            <span class="text-sm font-medium text-hospital-rose">
+              <i class="fa-solid fa-arrow-down mr-1"></i>-3%
+            </span>
+            <span class="text-sm text-gray-500 dark:text-gray-400 ml-2">vs période précédente</span>
+          </div>
+        </div>
+        <div class="card-hover bg-white dark:bg-gray-800 rounded-xl shadow-sm p-5 border-l-4 border-hospital-emerald animate-pulse-soft">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm text-gray-500 dark:text-gray-400">Alertes urgentes</p>
+              <h3 class="text-2xl font-extrabold mt-1">3</h3>
+            </div>
+            <div class="p-3 rounded-lg bg-emerald-100 text-hospital-emerald dark:bg-emerald-900/30">
+              <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+          </div>
+          <div class="mt-3 flex items-center">
+            <span class="text-sm font-medium text-hospital-emerald">
+              <i class="fa-solid fa-arrow-up mr-1"></i>+1
+            </span>
+            <span class="text-sm text-gray-500 dark:text-gray-400 ml-2">vs période précédente</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Tabs -->
+      <section class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden mb-8">
+        <div class="border-b border-gray-200 dark:border-gray-700">
+          <nav class="flex -mb-px">
+            <button @click="activeTab = 'patients'" :class="[
+                       'py-3 px-5 text-sm font-medium border-b-2 outline-none focus-visible:ring-2 focus-visible:ring-primary-500',
+                       activeTab==='patients' ? 'border-primary-500 text-primary-600 dark:text-primary-300'
+                                          : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
+                    ]">
+              Patients
+              <span class="ml-2 py-0.5 px-2 text-xs rounded-full bg-primary-100 text-primary-900 dark:bg-primary-900/40 dark:text-primary-200">42</span>
+            </button>
+            <button @click="activeTab = 'activity'" :class="[
+                       'py-3 px-5 text-sm font-medium border-b-2 outline-none focus-visible:ring-2 focus-visible:ring-primary-500',
+                       activeTab==='activity' ? 'border-primary-500 text-primary-600 dark:text-primary-300'
+                                          : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
+                    ]">
+              Activité
+            </button>
+            <button @click="activeTab = 'analytics'" :class="[
+                       'py-3 px-5 text-sm font-medium border-b-2 outline-none focus-visible:ring-2 focus-visible:ring-primary-500',
+                       activeTab==='analytics' ? 'border-primary-500 text-primary-600 dark:text-primary-300'
+                                          : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
+                    ]">
+              Analytiques
+            </button>
+            <button @click="activeTab = 'settings'" :class="[
+                       'py-3 px-5 text-sm font-medium border-b-2 outline-none focus-visible:ring-2 focus-visible:ring-primary-500',
+                       activeTab==='settings' ? 'border-primary-500 text-primary-600 dark:text-primary-300'
+                                          : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
+                    ]">
+              Paramètres
+              <span class="ml-2 py-0.5 px-2 text-xs rounded-full bg-rose-100 text-rose-800 dark:bg-rose-900/40 dark:text-rose-200">3</span>
+            </button>
+          </nav>
+        </div>
+
+        <div class="p-6">
+          <!-- Tab Patients -->
+          <div x-show="activeTab==='patients'">
+            <div class="overflow-x-auto">
+              <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead class="bg-gray-50 dark:bg-gray-700/50">
+                <tr class="text-left text-xs font-semibold uppercase text-gray-500 dark:text-gray-300">
+                  <th class="px-4 py-3">Patient</th>
+                  <th class="px-4 py-3">Service</th>
+                  <th class="px-4 py-3">Statut</th>
+                  <th class="px-4 py-3">Dernière MAJ</th>
+                  <th class="px-4 py-3">Actions</th>
+                </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/40">
+                  <td class="px-4 py-3">
+                    <div class="flex items-center">
+                      <img src="https://randomuser.me/api/portraits/women/32.jpg" class="w-10 h-10 rounded-full object-cover" alt="Avatar Marie Lambert"/>
+                      <div class="ml-3">
+                        <div class="font-medium">Marie Lambert</div>
+                        <div class="text-xs text-gray-500">34 ans • P-7741</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="px-4 py-3 text-sm">Cardiologie</td>
+                  <td class="px-4 py-3">
+                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200">Admis</span>
+                  </td>
+                  <td class="px-4 py-3 text-sm text-gray-500">Il y a 2 h</td>
+                  <td class="px-4 py-3 text-sm">
+                    <button class="px-2 py-1 rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 mr-2" @click="openDrawerWith({name: 'Marie Lambert', age: 34, id: 'P-7741', avatar: 'https://randomuser.me/api/portraits/women/32.jpg'})">
+                      <i class="fa-solid fa-file-medical"></i>
+                    </button>
+                    <button class="px-2 py-1 rounded-lg bg-primary-600 hover:bg-primary-700 text-white" @click="showModal = true">
+                      <i class="fa-solid fa-pen-to-square"></i>
+                    </button>
+                  </td>
+                </tr>
+                <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/40">
+                  <td class="px-4 py-3">
+                    <div class="flex items-center">
+                      <img src="https://randomuser.me/api/portraits/men/54.jpg" class="w-10 h-10 rounded-full object-cover" alt="Avatar Pierre Moreau"/>
+                      <div class="ml-3">
+                        <div class="font-medium">Pierre Moreau</div>
+                        <div class="text-xs text-gray-500">45 ans • P-7842</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="px-4 py-3 text-sm">Pédiatrie</td>
+                  <td class="px-4 py-3">
+                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-200">En attente</span>
+                  </td>
+                  <td class="px-4 py-3 text-sm text-gray-500">Il y a 30 min</td>
+                  <td class="px-4 py-3 text-sm">
+                    <button class="px-2 py-1 rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 mr-2" @click="openDrawerWith({name: 'Pierre Moreau', age: 45, id: 'P-7842', avatar: 'https://randomuser.me/api/portraits/men/54.jpg'})">
+                      <i class="fa-solid fa-file-medical"></i>
+                    </button>
+                    <button class="px-2 py-1 rounded-lg bg-primary-600 hover:bg-primary-700 text-white" @click="showModal = true">
+                      <i class="fa-solid fa-pen-to-square"></i>
+                    </button>
+                  </td>
+                </tr>
+                <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/40">
+                  <td class="px-4 py-3">
+                    <div class="flex items-center">
+                      <img src="https://randomuser.me/api/portraits/women/68.jpg" class="w-10 h-10 rounded-full object-cover" alt="Avatar Claire Bernard"/>
+                      <div class="ml-3">
+                        <div class="font-medium">Claire Bernard</div>
+                        <div class="text-xs text-gray-500">28 ans • P-8188</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="px-4 py-3 text-sm">Urgences</td>
+                  <td class="px-4 py-3">
+                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200">Admis</span>
+                  </td>
+                  <td class="px-4 py-3 text-sm text-gray-500">Il y a 1 h</td>
+                  <td class="px-4 py-3 text-sm">
+                    <button class="px-2 py-1 rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 mr-2" @click="openDrawerWith({name: 'Claire Bernard', age: 28, id: 'P-8188', avatar: 'https://randomuser.me/api/portraits/women/68.jpg'})">
+                      <i class="fa-solid fa-file-medical"></i>
+                    </button>
+                    <button class="px-2 py-1 rounded-lg bg-primary-600 hover:bg-primary-700 text-white" @click="showModal = true">
+                      <i class="fa-solid fa-pen-to-square"></i>
+                    </button>
+                  </td>
+                </tr>
+                <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/40">
+                  <td class="px-4 py-3">
+                    <div class="flex items-center">
+                      <img src="https://randomuser.me/api/portraits/men/32.jpg" class="w-10 h-10 rounded-full object-cover" alt="Avatar Antoine Petit"/>
+                      <div class="ml-3">
+                        <div class="font-medium">Antoine Petit</div>
+                        <div class="text-xs text-gray-500">62 ans • P-7490</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="px-4 py-3 text-sm">Chirurgie</td>
+                  <td class="px-4 py-3">
+                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200">Admis</span>
+                  </td>
+                  <td class="px-4 py-3 text-sm text-gray-500">Il y a 3 h</td>
+                  <td class="px-4 py-3 text-sm">
+                    <button class="px-2 py-1 rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 mr-2" @click="openDrawerWith({name: 'Antoine Petit', age: 62, id: 'P-7490', avatar: 'https://randomuser.me/api/portraits/men/32.jpg'})">
+                      <i class="fa-solid fa-file-medical"></i>
+                    </button>
+                    <button class="px-2 py-1 rounded-lg bg-primary-600 hover:bg-primary-700 text-white" @click="showModal = true">
+                      <i class="fa-solid fa-pen-to-square"></i>
+                    </button>
+                  </td>
+                </tr>
+                <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/40">
+                  <td class="px-4 py-3">
+                    <div class="flex items-center">
+                      <img src="https://randomuser.me/api/portraits/women/44.jpg" class="w-10 h-10 rounded-full object-cover" alt="Avatar Élise Dubois"/>
+                      <div class="ml-3">
+                        <div class="font-medium">Élise Dubois</div>
+                        <div class="text-xs text-gray-500">29 ans • P-9012</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="px-4 py-3 text-sm">Maternité</td>
+                  <td class="px-4 py-3">
+                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-200">En attente</span>
+                  </td>
+                  <td class="px-4 py-3 text-sm text-gray-500">Il y a 45 min</td>
+                  <td class="px-4 py-3 text-sm">
+                    <button class="px-2 py-1 rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 mr-2" @click="openDrawerWith({name: 'Élise Dubois', age: 29, id: 'P-9012', avatar: 'https://randomuser.me/api/portraits/women/44.jpg'})">
+                      <i class="fa-solid fa-file-medical"></i>
+                    </button>
+                    <button class="px-2 py-1 rounded-lg bg-primary-600 hover:bg-primary-700 text-white" @click="showModal = true">
+                      <i class="fa-solid fa-pen-to-square"></i>
+                    </button>
+                  </td>
+                </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Pagination -->
+            <div class="px-4 py-3 flex items-center justify-between border-t border-gray-200 dark:border-gray-700">
+              <p class="text-sm text-gray-600">Affiche 1–10 sur 97 résultats</p>
+              <nav class="inline-flex rounded-md shadow-sm overflow-hidden">
+                <button class="px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600" aria-label="Précédent">
+                  <i class="fa-solid fa-angles-left"></i>
+                </button>
+                <button class="px-3 py-2 border-t border-b border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700">1</button>
+                <button class="px-3 py-2 border-t border-b border-gray-300 dark:border-gray-600 bg-primary-50 dark:bg-primary-900/40 text-primary-700 dark:text-primary-300">2</button>
+                <button class="px-3 py-2 border-t border-b border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700">3</button>
+                <button class="px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600" aria-label="Suivant">
+                  <i class="fa-solid fa-angles-right"></i>
+                </button>
+              </nav>
+            </div>
+          </div>
+
+          <!-- Tab Activité -->
+          <div x-show="activeTab==='activity'">
+            <ul class="-mb-8">
+              <li class="relative pb-8">
+                <span class="absolute top-4 left-4 -ml-px h-full w-0.5 bg-gray-200 dark:bg-gray-700"></span>
+                <div class="relative flex gap-3">
+                  <span class="h-8 w-8 rounded-full grid place-items-center ring-8 ring-white dark:ring-gray-800 bg-hospital-blue text-white">
+                    <i class="fa-solid fa-user-plus"></i>
+                  </span>
+                  <div class="flex-1 pt-1.5 flex justify-between">
+                    <div>
+                      <p class="text-sm">
+                        <b>Dr. Martin</b> a admis <b>Sophie Lambert</b>
+                      </p>
+                      <p class="text-xs text-gray-500">Il y a 2 h</p>
+                    </div>
+                    <time class="text-xs text-gray-500 whitespace-nowrap" datetime="2025-09-30T10:30">10:30</time>
+                  </div>
+                </div>
+              </li>
+              <li class="relative pb-8">
+                <span class="absolute top-4 left-4 -ml-px h-full w-0.5 bg-gray-200 dark:bg-gray-700"></span>
+                <div class="relative flex gap-3">
+                  <span class="h-8 w-8 rounded-full grid place-items-center ring-8 ring-white dark:ring-gray-800 bg-hospital-teal text-white">
+                    <i class="fa-solid fa-stethoscope"></i>
+                  </span>
+                  <div class="flex-1 pt-1.5 flex justify-between">
+                    <div>
+                      <p class="text-sm">
+                        <b>Dr. Lefebvre</b> a examiné <b>Pierre Moreau</b>
+                      </p>
+                      <p class="text-xs text-gray-500">Il y a 3 h</p>
+                    </div>
+                    <time class="text-xs text-gray-500 whitespace-nowrap" datetime="2025-09-30T09:45">09:45</time>
+                  </div>
+                </div>
+              </li>
+              <li class="relative pb-8">
+                <span class="absolute top-4 left-4 -ml-px h-full w-0.5 bg-gray-200 dark:bg-gray-700"></span>
+                <div class="relative flex gap-3">
+                  <span class="h-8 w-8 rounded-full grid place-items-center ring-8 ring-white dark:ring-gray-800 bg-hospital-amber text-white">
+                    <i class="fa-solid fa-vial"></i>
+                  </span>
+                  <div class="flex-1 pt-1.5 flex justify-between">
+                    <div>
+                      <p class="text-sm">
+                        <b>Lab. Central</b> a terminé les analyses de <b>Claire Bernard</b>
+                      </p>
+                      <p class="text-xs text-gray-500">Il y a 5 h</p>
+                    </div>
+                    <time class="text-xs text-gray-500 whitespace-nowrap" datetime="2025-09-30T07:30">07:30</time>
+                  </div>
+                </div>
+              </li>
+              <li class="relative pb-8">
+                <div class="relative flex gap-3">
+                  <span class="h-8 w-8 rounded-full grid place-items-center ring-8 ring-white dark:ring-gray-800 bg-hospital-emerald text-white">
+                    <i class="fa-solid fa-house"></i>
+                  </span>
+                  <div class="flex-1 pt-1.5 flex justify-between">
+                    <div>
+                      <p class="text-sm">
+                        <b>Dr. Dubois</b> a autorisé la sortie de <b>Antoine Petit</b>
+                      </p>
+                      <p class="text-xs text-gray-500">Hier</p>
+                    </div>
+                    <time class="text-xs text-gray-500 whitespace-nowrap" datetime="2025-09-29T16:20">16:20</time>
+                  </div>
+                </div>
+              </li>
+            </ul>
+            <div class="mt-4 text-center">
+              <button class="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
+                <i class="fa-solid fa-rotate-right mr-2"></i> Charger plus
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Graphiques (placeholders) -->
+      <section class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+          <h3 class="text-lg font-semibold mb-4">Occupation des lits</h3>
+          <div class="h-72 grid place-items-center rounded-lg bg-gray-100 dark:bg-gray-700">
+            <div class="text-center">
+              <i class="fa-solid fa-chart-line text-4xl text-gray-400 mb-2"></i>
+              <p class="text-gray-500">Placeholder graphique (Chart.js/Recharts)</p>
+            </div>
+          </div>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+          <h3 class="text-lg font-semibold mb-4">Activité des services</h3>
+          <div class="h-72 grid place-items-center rounded-lg bg-gray-100 dark:bg-gray-700">
+            <div class="text-center">
+              <i class="fa-solid fa-chart-pie text-4xl text-gray-400 mb-2"></i>
+              <p class="text-gray-500">Placeholder graphique (Chart.js/Recharts)</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Actions -->
+      <section class="flex flex-wrap gap-3 mb-8">
+        <button class="px-4 py-2 bg-hospital-blue text-white rounded-lg hover:bg-blue-700" @click="notify('success','Nouveau patient','Formulaire ouvert')">
+          <i class="fa-solid fa-user-plus mr-2"></i>Nouveau patient
+        </button>
+        <button class="px-4 py-2 bg-hospital-teal text-white rounded-lg hover:bg-teal-700" @click="notify('info','RDV','Création de RDV')">
+          <i class="fa-solid fa-calendar-plus mr-2"></i>Créer un rendez-vous
+        </button>
+        <button class="px-4 py-2 bg-hospital-emerald text-white rounded-lg hover:bg-emerald-700" @click="notify('success','Rapport','Génération du rapport')">
+          <i class="fa-solid fa-file-medical mr-2"></i>Générer un rapport
+        </button>
+        <button class="px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600" @click="showModal=true">
+          <i class="fa-solid fa-gear mr-2"></i>Ouvrir modal
+        </button>
+        <button class="px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600" @click="showDrawer=true">
+          <i class="fa-solid fa-bars mr-2"></i>Ouvrir drawer
+        </button>
+      </section>
+
+      <!-- Stepper -->
+      <section class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-8">
+        <h3 class="text-lg font-semibold mb-4">Processus d'admission</h3>
+        <div class="flex items-center justify-between max-w-4xl mx-auto">
+          <div class="flex items-center">
+            <div class="flex flex-col items-center">
+              <div class="h-12 w-12 rounded-full grid place-items-center text-sm font-semibold bg-hospital-emerald text-white">
+                <i class="fa-solid fa-check"></i>
+              </div>
+              <span class="mt-2 text-xs font-medium text-hospital-blue dark:text-hospital-teal">Informations</span>
+            </div>
+            <div class="w-14 h-0.5 mx-3 bg-hospital-emerald"></div>
+          </div>
+          <div class="flex items-center">
+            <div class="flex flex-col items-center">
+              <div class="h-12 w-12 rounded-full grid place-items-center text-sm font-semibold bg-hospital-emerald text-white">
+                <i class="fa-solid fa-check"></i>
+              </div>
+              <span class="mt-2 text-xs font-medium text-hospital-blue dark:text-hospital-teal">Examen</span>
+            </div>
+            <div class="w-14 h-0.5 mx-3 bg-hospital-emerald"></div>
+          </div>
+          <div class="flex items-center">
+            <div class="flex flex-col items-center">
+              <div class="h-12 w-12 rounded-full grid place-items-center text-sm font-semibold bg-hospital-blue text-white">
+                <span>3</span>
+              </div>
+              <span class="mt-2 text-xs font-medium text-hospital-blue dark:text-hospital-teal">Diagnostic</span>
+            </div>
+            <div class="w-14 h-0.5 mx-3 bg-gray-200 dark:bg-gray-700"></div>
+          </div>
+          <div class="flex items-center">
+            <div class="flex flex-col items-center">
+              <div class="h-12 w-12 rounded-full grid place-items-center text-sm font-semibold bg-gray-100 dark:bg-gray-700 text-gray-500">
+                <span>4</span>
+              </div>
+              <span class="mt-2 text-xs font-medium text-gray-500">Traitement</span>
+            </div>
+            <div class="w-14 h-0.5 mx-3 bg-gray-200 dark:bg-gray-700"></div>
+          </div>
+          <div class="flex items-center">
+            <div class="flex flex-col items-center">
+              <div class="h-12 w-12 rounded-full grid place-items-center text-sm font-semibold bg-gray-100 dark:bg-gray-700 text-gray-500">
+                <span>5</span>
+              </div>
+              <span class="mt-2 text-xs font-medium text-gray-500">Suivi</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Empty state -->
+      <section class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-10 text-center">
+        <i class="fa-solid fa-magnifying-glass text-4xl text-gray-300 dark:text-gray-600 mb-3"></i>
+        <h3 class="text-lg font-semibold mb-1">Aucun résultat</h3>
+        <p class="text-gray-500 max-w-md mx-auto mb-5">Aucun patient ne correspond aux critères de recherche.
+          Ajustez les filtres ou réessayez.</p>
+        <button class="px-4 py-2 bg-hospital-blue text-white rounded-lg hover:bg-blue-700" @click="notify('info','Filtres','Réinitialisation des filtres')">Réinitialiser les filtres
+        </button>
+      </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="px-4 md:px-6 py-4 text-sm text-gray-500 dark:text-gray-400 border-t border-gray-200 dark:border-gray-700">
+      Ministère de la Santé — CHU - MSHPCMU National · © 2025
+    </footer>
+  </div>
+    {% endblock %}

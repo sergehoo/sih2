@@ -1,0 +1,54 @@
+
+  <!-- ===== Drawer (mobile / détails patient) ===== -->
+  <div x-show="showDrawer" class="fixed inset-0 z-50">
+    <div class="absolute inset-0 bg-black/50" @click="showDrawer=false" aria-hidden="true"></div>
+    <aside class="absolute right-0 top-0 bottom-0 w-full max-w-md bg-white dark:bg-gray-800 shadow-xl flex flex-col">
+      <div class="px-4 py-4 border-b border-gray-200 dark:border-gray-700 flex items-start justify-between">
+        <h2 class="text-lg font-semibold">Informations du patient</h2>
+        <button class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700" @click="showDrawer=false" aria-label="Fermer le panneau">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div class="p-4 overflow-y-auto custom-scrollbar space-y-6">
+        <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+          <div class="flex items-center mb-4">
+            <img :src="drawerPatient.avatar || 'https://randomuser.me/api/portraits/men/32.jpg'" class="w-12 h-12 rounded-full object-cover" alt="Patient"/>
+            <div class="ml-4">
+              <p class="font-medium" x-text="drawerPatient.name || '—'"></p>
+              <p class="text-sm text-gray-500" x-text="(drawerPatient.age || '—') + ' ans • ID: ' + (drawerPatient.id || '—')"></p>
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-4 text-sm">
+            <div>
+              <p class="text-gray-500">Groupe sanguin</p>
+              <p class="font-medium">O+</p>
+            </div>
+            <div>
+              <p class="text-gray-500">Allergies</p>
+              <p class="font-medium">Pénicilline</p>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h3 class="text-sm font-semibold mb-2">Dernières consultations</h3>
+          <div class="space-y-3">
+            <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+              <div>
+                <p class="font-medium">Cardiologie</p>
+                <p class="text-sm text-gray-500">15 Mars 2023</p>
+              </div>
+              <span class="px-2 py-1 text-xs rounded-full bg-hospital-emerald text-white">Terminé</span>
+            </div>
+            <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+              <div>
+                <p class="font-medium">Radiologie</p>
+                <p class="text-sm text-gray-500">10 Mars 2023</p>
+              </div>
+              <span class="px-2 py-1 text-xs rounded-full bg-hospital-amber text-white">En attente</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </aside>
+  </div>

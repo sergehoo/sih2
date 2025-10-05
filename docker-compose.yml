@@ -73,7 +73,6 @@ services:
       - ./.env
     environment:
       DJANGO_SETTINGS_MODULE: sigh.settings.prod
-      # Si vous n'utilisez pas DATABASE_URL dans .env, vous pouvez forcer ici :
       # DATABASE_URL: postgresql://${PG_USER}:${PG_PASSWORD}@pgbouncer:6432/${PG_DB}
     depends_on:
       - pgbouncer
