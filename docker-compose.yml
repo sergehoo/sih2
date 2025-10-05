@@ -65,9 +65,7 @@ services:
 
   sighweb:
     build:
-      context: ./backend
       dockerfile: Dockerfile
-    container_name: django
     restart: unless-stopped
     env_file:
       - ./.env
