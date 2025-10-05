@@ -46,7 +46,7 @@ services:
       POSTGRESQL_USERNAME: ${PG_USER}
       POSTGRESQL_PASSWORD: ${PG_PASSWORD}
     depends_on:
-      - postgres
+      - sighdb
     networks:
       - internal
     ports:
