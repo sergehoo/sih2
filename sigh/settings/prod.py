@@ -68,7 +68,31 @@ CORS_ALLOWED_ORIGINS = [o for o in ENV("CORS_ALLOWED_ORIGINS", "").split(",") if
 CSRF_TRUSTED_ORIGINS = [o for o in ENV("CSRF_TRUSTED_ORIGINS", "").split(",") if o]
 
 # Logging prod (moins verbeux)
-LOGGING["loggers"]["django"]["level"] = ENV("DJANGO_LOG_LEVEL", "INFO")
-LOGGING["loggers"]["django.db.backends"]["level"] = ENV("DJANGO_DB_LOG_LEVEL", "WARNING")
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "simple": {"format": "%(levelname)s %(name)s: %(message)s"},
+        "verbose": {"format": "%(asctime)s %(levelname)s [%(name)s] %(message)s"},
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "simple",
+        },
+    },
+    "loggers": {
+        "django": {
+            "handlers": ["console"],
+            "level": ENV("DJANGO_LOG_LEVEL", "INFO"),
+            "propagate": False,
+        },
+        "django.request": {
+            "handlers": ["console"],
+            "level": "WARNING",
+            "propagate": False,
+        },
+    },
+}
 
 # Prometheus: /metrics exposé par django-prometheus (protège au niveau ingress)

@@ -155,23 +155,23 @@ REST_FRAMEWORK = {
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": int(ENV("DJANGO_PAGE_SIZE", "50")),
 }
-SIMPLE_JWT = {
-    "ALGORITHM": "RS256",
-    # On vérifie via JWKS — ne pas renseigner SIGNING/VERIFYING_KEY
-    "SIGNING_KEY": None,
-    "VERIFYING_KEY": None,
-
-    # IMPORTANT: drf-simplejwt >= 5.x
-    "JWK_URL": f"{ENV('OIDC_ISSUER')}/protocol/openid-connect/certs",
-
-    "ISSUER": ENV("OIDC_ISSUER"),
-    "AUDIENCE": ENV("OIDC_AUDIENCE", "sih-api"),
-
-    "AUTH_HEADER_TYPES": ("Bearer",),
-    "USER_ID_CLAIM": "sub",  # subject Keycloak
-    "LEEWAY": 30,
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=int(ENV("JWT_ACCESS_MIN", "30"))),
-}
+# SIMPLE_JWT = {
+#     "ALGORITHM": "RS256",
+#     # On vérifie via JWKS — ne pas renseigner SIGNING/VERIFYING_KEY
+#     "SIGNING_KEY": None,
+#     "VERIFYING_KEY": None,
+#
+#     # IMPORTANT: drf-simplejwt >= 5.x
+#     "JWK_URL": f"{ENV('OIDC_ISSUER')}/protocol/openid-connect/certs",
+#
+#     "ISSUER": ENV("OIDC_ISSUER"),
+#     "AUDIENCE": ENV("OIDC_AUDIENCE", "sih-api"),
+#
+#     "AUTH_HEADER_TYPES": ("Bearer",),
+#     "USER_ID_CLAIM": "sub",  # subject Keycloak
+#     "LEEWAY": 30,
+#     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=int(ENV("JWT_ACCESS_MIN", "30"))),
+# }
 # SimpleJWT (si tu vérifies localement la clé publique)
 SIMPLE_JWT = {
     "ALGORITHM": "RS256",
