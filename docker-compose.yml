@@ -1,7 +1,7 @@
 
 networks:
   proxy:
-    driver: bridge
+    external: true
   internal:
     driver: bridge
 
@@ -25,7 +25,6 @@ services:
       retries: 10
     volumes:
       - pg_data:/var/lib/postgresql/data
-      - pg_data:/var/lib/postgresql/data
       - ./db/init-keycloak.sql:/docker-entrypoint-initdb.d/10-init-keycloak.sql:ro
     networks:
       - internal
@@ -36,7 +35,7 @@ services:
     restart: unless-stopped
     environment:
       PGBOUNCER_DATABASE: ${PG_DB}
-      PGBOUNCER_HOST: postgres
+      PGBOUNCER_HOST: sighdb
       PGBOUNCER_PORT: 5432
       PGBOUNCER_AUTH_TYPE: md5
       PGBOUNCER_MAX_CLIENT_CONN: "5000"
@@ -89,18 +88,16 @@ services:
       - "traefik.http.routers.api.entrypoints=websecure"
       - "traefik.http.routers.api.tls.certresolver=lets"
       - "traefik.http.services.api.loadbalancer.server.port=8000"
+      - "traefik.http.routers.api.middlewares=sec-headers@docker"
       # (Option) middlewares de sécurité
-      - "traefik.http.middlewares.sec-headers.headers.stsSeconds=31536000"
-      - "traefik.http.middlewares.sec-headers.headers.stsIncludeSubdomains=true"
-      - "traefik.http.middlewares.sec-headers.headers.forceSTSHeader=true"
-      - "traefik.http.routers.api.middlewares=sec-headers"
+
   keycloak:
     image: quay.io/keycloak/keycloak:26.0
     container_name: keycloak
     restart: unless-stopped
     environment:
       KC_DB: postgres
-      KC_DB_URL: jdbc:postgresql://postgres:5432/${KC_DB_NAME}
+      KC_DB_URL: jdbc:postgresql://sighdb:5432/${KC_DB_NAME}
       KC_DB_USERNAME: ${KC_DB_USER}
       KC_DB_PASSWORD: ${KC_DB_PASSWORD}
 
@@ -128,6 +125,7 @@ services:
       - "traefik.http.routers.sso.entrypoints=websecure"
       - "traefik.http.routers.sso.tls.certresolver=lets"
       - "traefik.http.services.sso.loadbalancer.server.port=8080"
+      - "traefik.http.routers.sso.middlewares=sec-headers@docker"
 
   # (Option) frontends React servis par nginx — décommentez si besoin
   # staff_frontend:
