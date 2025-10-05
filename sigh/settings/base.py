@@ -222,3 +222,4 @@ DEFAULT_FROM_EMAIL = ENV("DEFAULT_FROM_EMAIL", "no-reply@sigh.local")
 # -----------------------
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")  # si derrière Traefik/Nginx
 X_FRAME_OPTIONS = "DENY"
+
