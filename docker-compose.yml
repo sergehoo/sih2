@@ -140,6 +140,18 @@ services:
       - "traefik.http.services.sso.loadbalancer.server.port=8080"
       - "traefik.http.routers.sso.middlewares=sec-headers@docker"
 
+      - "traefik.http.services.sso.loadbalancer.passhostheader=true"
+      - "traefik.http.services.sso.loadbalancer.healthcheck.path=/health/ready"
+      - "traefik.http.services.sso.loadbalancer.healthcheck.interval=10s"
+      - "traefik.http.services.sso.loadbalancer.healthcheck.timeout=3s"
+
+        # Timeouts (évite 504 si Keycloak met un peu de temps)
+      - "traefik.http.services.sso.loadbalancer.serversTransport=sso-transport"
+      - "traefik.http.serversTransports.sso-transport.forwardingTimeouts.dialTimeout=30s"
+      - "traefik.http.serversTransports.sso-transport.forwardingTimeouts.responseHeaderTimeout=60s"
+      - "traefik.http.serversTransports.sso-transport.forwardingTimeouts.readIdleTimeout=60s"
+      - "traefik.http.serversTransports.sso-transport.forwardingTimeouts.idleConnTimeout=90s"
+
   # (Option) frontends React servis par nginx — décommentez si besoin
   # staff_frontend:
   #   image: nginx:1.27-alpine
