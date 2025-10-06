@@ -45,10 +45,10 @@ services:
       MAX_CLIENT_CONN: "5000"
       DEFAULT_POOL_SIZE: "50"
       AUTH_TYPE: md5
-
       # Ecoute côté pgbouncer
       LISTEN_ADDR: 0.0.0.0
       LISTEN_PORT: "6432"
+      IGNORE_STARTUP_PARAMETERS: "extra_float_digits,options,search_path"
     healthcheck:
       test: [ "CMD-SHELL", "sh -c '</dev/tcp/127.0.0.1/6432'" ]
       interval: 5s
@@ -60,7 +60,7 @@ services:
       - internal
     ports:
       - 6432
-    IGNORE_STARTUP_PARAMETERS: "extra_float_digits,options,search_path"
+
 
 
 
