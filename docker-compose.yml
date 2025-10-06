@@ -60,6 +60,7 @@ services:
       - internal
     ports:
       - 6432
+    IGNORE_STARTUP_PARAMETERS: "extra_float_digits,options,search_path"
 
 
 
