@@ -40,11 +40,12 @@ services:
       DB_PASSWORD: ${PG_PASSWORD}
       DB_NAME: ${PG_DB}
 
+
       # Options de pool
       POOL_MODE: transaction
       MAX_CLIENT_CONN: "5000"
       DEFAULT_POOL_SIZE: "50"
-      AUTH_TYPE: md5
+      AUTH_TYPE: scram-sha-256
       # Ecoute côté pgbouncer
       LISTEN_ADDR: 0.0.0.0
       LISTEN_PORT: "6432"
@@ -60,9 +61,6 @@ services:
       - internal
     ports:
       - 6432
-
-
-
 
   redis:
     image: redis:7-alpine
