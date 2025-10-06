@@ -126,7 +126,6 @@ services:
       KC_METRICS_ENABLED: "true"
       KC_HTTP_RELATIVE_PATH: "/"            # inutile si racine
 
-      KC_HOSTNAME_STRICT: "false"
       KC_HOSTNAME_STRICT_HTTPS: "false"
       JAVA_OPTS: "-Xms512m -Xmx1024m -Djgroups.udp.mcast_port=45700"
 
