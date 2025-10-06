@@ -58,6 +58,8 @@ services:
       - sighdb
     networks:
       - internal
+    ports:
+      - 6432
 
 
 
