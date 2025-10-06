@@ -15,7 +15,7 @@ urlpatterns = [
                   path('logistic/route/', include('logistic.api.urls')),
                   path('pharmacy/route/', include('pharmacy.api.urls')),
 
-                  path('', HomeView.as_view(), name="homeview"),
+                  path('home/dash', HomeView.as_view(), name="homeview"),
 
                   path('admin/', admin.site.urls),
               ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
