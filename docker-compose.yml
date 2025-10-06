@@ -44,13 +44,16 @@ services:
       PGBOUNCER_IGNORE_STARTUP_PARAMETERS: "extra_float_digits,search_path"
       POSTGRESQL_USERNAME: ${PG_USER}
       POSTGRESQL_PASSWORD: ${PG_PASSWORD}
+    healthcheck:
+      # test TCP simple (pas besoin de pg_isready dans l'image)
+      test: [ "CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/6432'" ]
+      interval: 5s
+      timeout: 3s
+      retries: 12
     depends_on:
       - sighdb
-    networks:
-      - internal
-    ports:
-      # expose only if you need external psql access through the pool (dev)
-      - "6432:6432"
+    networks: [ internal ]
+
 
   redis:
     image: redis:7-alpine
