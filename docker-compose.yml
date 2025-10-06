@@ -118,9 +118,14 @@ services:
       # Derrière Traefik
       KC_PROXY: edge
       KC_HOSTNAME: ${SSO_HOST}
+      KC_HOSTNAME_URL: ${HOSTNAME_URL}
+      KC_HOSTNAME_ADMIN_URL: ${HOSTNAME_ADMIN_URL}
       KC_HTTP_ENABLED: "true"
+      KC_PROXY_HEADERS: xforwarded
+
       KC_HEALTH_ENABLED: "true"
       KC_METRICS_ENABLED: "true"
+      KC_HTTP_RELATIVE_PATH: "/"
     command: [ "start" ]  # (prod) pas "start-dev"
     depends_on:
       - sighdb
@@ -131,6 +136,7 @@ services:
       - "8080"
     labels:
       - "traefik.enable=true"
+      - "traefik.docker.network=proxy"
       - "traefik.http.routers.sso.rule=Host(`${SSO_HOST}`)"
       - "traefik.http.routers.sso.entrypoints=websecure"
       - "traefik.http.routers.sso.tls.certresolver=lets"
