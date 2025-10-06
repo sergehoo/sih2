@@ -117,15 +117,18 @@ services:
       KEYCLOAK_ADMIN_PASSWORD: ${KC_ADMIN_PASSWORD}
 
       # 🔒 reverse proxy + hostname v2
+      KC_HOSTNAME: ${SSO_HOST}
       KC_HTTP_ENABLED: "true"                 # on écoute en HTTP dans le conteneur
+      KC_PROXY: edge
       KC_PROXY_HEADERS: xforwarded            # Traefik envoie X-Forwarded-*
-      KC_HOSTNAME: ${SSO_HOST}                # sso.onehealthci.com
-      KC_HOSTNAME_URL: https://${SSO_HOST}    # URL externe en https
-      KC_HOSTNAME_ADMIN_URL: https://${SSO_HOST}   # console admin servie sur le même host
 
       KC_HEALTH_ENABLED: "true"
       KC_METRICS_ENABLED: "true"
-      # KC_HTTP_RELATIVE_PATH: "/"            # inutile si racine
+      KC_HTTP_RELATIVE_PATH: "/"            # inutile si racine
+
+      KC_HOSTNAME_STRICT: "false"
+      KC_HOSTNAME_STRICT_HTTPS: "false"
+      JAVA_OPTS: "-Xms512m -Xmx1024m -Djgroups.udp.mcast_port=45700"
 
     command: [ "start" ]
     networks: [ internal, proxy ]
