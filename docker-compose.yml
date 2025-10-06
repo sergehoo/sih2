@@ -141,10 +141,6 @@ services:
       - "traefik.http.routers.sso.tls.certresolver=lets"
       - "traefik.http.services.sso.loadbalancer.server.port=8080"
       - "traefik.http.routers.sso.middlewares=sec-headers@docker"
-      - "traefik.http.services.sso.loadbalancer.passhostheader=true"
-      - "traefik.http.services.sso.loadbalancer.healthcheck.path=/health/ready"
-      - "traefik.http.services.sso.loadbalancer.healthcheck.interval=10s"
-      - "traefik.http.services.sso.loadbalancer.healthcheck.timeout=3s"
 
 
   # (Option) frontends React servis par nginx — décommentez si besoin
