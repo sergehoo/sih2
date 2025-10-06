@@ -140,7 +140,7 @@ services:
       - "traefik.http.routers.sso.entrypoints=websecure"
       - "traefik.http.routers.sso.tls.certresolver=lets"
       - "traefik.http.services.sso.loadbalancer.server.port=8080"
-      - "traefik.http.routers.sso.middlewares=sec-headers@docker"
+#      - "traefik.http.routers.sso.middlewares=sec-headers@docker"
 
 
   # (Option) frontends React servis par nginx — décommentez si besoin
