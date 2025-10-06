@@ -31,28 +31,34 @@ services:
 
   pgbouncer:
     image: edoburu/pgbouncer:v1.24.1-p1
-    container_name: pgbouncer
     restart: unless-stopped
     environment:
-      PGBOUNCER_DATABASE: ${PG_DB}
-      PGBOUNCER_HOST: sighdb
-      PGBOUNCER_PORT: 5432
-      PGBOUNCER_AUTH_TYPE: md5
-      PGBOUNCER_MAX_CLIENT_CONN: "5000"
-      PGBOUNCER_DEFAULT_POOL_SIZE: "50"
-      PGBOUNCER_POOL_MODE: transaction
-      PGBOUNCER_IGNORE_STARTUP_PARAMETERS: "extra_float_digits,search_path"
-      POSTGRESQL_USERNAME: ${PG_USER}
-      POSTGRESQL_PASSWORD: ${PG_PASSWORD}
+      # === Côté edoburu ===
+      DB_HOST: sighdb
+      DB_PORT: "5432"
+      DB_USER: ${PG_USER}
+      DB_PASSWORD: ${PG_PASSWORD}
+      DB_NAME: ${PG_DB}
+
+      # Options de pool
+      POOL_MODE: transaction
+      MAX_CLIENT_CONN: "5000"
+      DEFAULT_POOL_SIZE: "50"
+      AUTH_TYPE: md5
+
+      # Ecoute côté pgbouncer
+      LISTEN_ADDR: 0.0.0.0
+      LISTEN_PORT: "6432"
     healthcheck:
-      # test TCP simple (pas besoin de pg_isready dans l'image)
-      test: [ "CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/6432'" ]
+      test: [ "CMD-SHELL", "sh -c '</dev/tcp/127.0.0.1/6432'" ]
       interval: 5s
       timeout: 3s
       retries: 12
     depends_on:
       - sighdb
-    networks: [ internal ]
+    networks:
+      - internal
+
 
 
   redis:
