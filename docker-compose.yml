@@ -106,49 +106,45 @@ services:
     container_name: keycloak
     restart: unless-stopped
     environment:
-      # DB
       KC_DB: postgres
       KC_DB_URL: jdbc:postgresql://sighdb:5432/${KC_DB_NAME}
       KC_DB_USERNAME: ${KC_DB_USER}
       KC_DB_PASSWORD: ${KC_DB_PASSWORD}
 
-      # Admin bootstrap
       KEYCLOAK_ADMIN: ${KC_ADMIN}
       KEYCLOAK_ADMIN_PASSWORD: ${KC_ADMIN_PASSWORD}
 
-      # 🔒 reverse proxy + hostname v2
       KC_HOSTNAME: ${SSO_HOST}
-      KC_HTTP_ENABLED: "true"                 # on écoute en HTTP dans le conteneur
+      KC_HTTP_ENABLED: "true"
       KC_PROXY: edge
-      KC_PROXY_HEADERS: xforwarded            # Traefik envoie X-Forwarded-*
+      KC_PROXY_HEADERS: xforwarded
 
       KC_HEALTH_ENABLED: "true"
       KC_METRICS_ENABLED: "true"
-      KC_HTTP_RELATIVE_PATH: "/"            # inutile si racine
+      KC_HTTP_RELATIVE_PATH: "/"
 
+      KC_HOSTNAME_STRICT: "false"
       KC_HOSTNAME_STRICT_HTTPS: "false"
       JAVA_OPTS: "-Xms512m -Xmx1024m -Djgroups.udp.mcast_port=45700"
 
     command: [ "start" ]
-    networks: [ internal, proxy ]
-    expose: [ "8080" ]
+    networks:
+      - internal
+      - proxy
+    expose:
+      - "8080"
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=proxy"
-      - "traefik.http.routers.sso.rule=Host(`${SSO_HOST}`)"
+      - "traefik.http.routers.sso.rule=Host(`${SSO_HOST}`) && PathPrefix(`/`)"
       - "traefik.http.routers.sso.entrypoints=websecure"
       - "traefik.http.routers.sso.tls.certresolver=lets"
       - "traefik.http.services.sso.loadbalancer.server.port=8080"
       - "traefik.http.routers.sso.middlewares=sec-headers@docker"
-
       - "traefik.http.services.sso.loadbalancer.passhostheader=true"
-      - "traefik.http.routers.sso.service=sso"
-      - "traefik.http.routers.sso.rule=Host(`${SSO_HOST}`) && PathPrefix(`/`)"
-      # ✅ ne PAS définir de serversTransport ici
-      # (optionnel) healthcheck côté Traefik si tu veux:
-      # - "traefik.http.services.sso.loadbalancer.healthcheck.path=/health/ready"
-      # - "traefik.http.services.sso.loadbalancer.healthcheck.interval=10s"
-      # - "traefik.http.services.sso.loadbalancer.healthcheck.timeout=3s"
+      - "traefik.http.services.sso.loadbalancer.healthcheck.path=/health/ready"
+      - "traefik.http.services.sso.loadbalancer.healthcheck.interval=10s"
+      - "traefik.http.services.sso.loadbalancer.healthcheck.timeout=3s"
 
 
   # (Option) frontends React servis par nginx — décommentez si besoin
