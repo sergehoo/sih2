@@ -117,6 +117,8 @@ services:
 
       # Derrière Traefik
       KC_HOSTNAME: ${SSO_HOST}
+      KC_HOSTNAME_URL: ${HOSTNAME_URL}
+      KC_HOSTNAME_ADMIN_URL: ${HOSTNAME_ADMIN_URL}
       KC_HTTP_ENABLED: "true"
       KC_PROXY_HEADERS: xforwarded
 
@@ -145,7 +147,7 @@ services:
       - "traefik.http.services.sso.loadbalancer.healthcheck.interval=10s"
       - "traefik.http.services.sso.loadbalancer.healthcheck.timeout=3s"
 
-        # Timeouts (évite 504 si Keycloak met un peu de temps)
+      # Timeouts (évite 504 si Keycloak met un peu de temps)
       - "traefik.http.services.sso.loadbalancer.serversTransport=sso-transport"
       - "traefik.http.serversTransports.sso-transport.forwardingTimeouts.dialTimeout=30s"
       - "traefik.http.serversTransports.sso-transport.forwardingTimeouts.responseHeaderTimeout=60s"
