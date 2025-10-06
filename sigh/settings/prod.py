@@ -96,3 +96,5 @@ LOGGING = {
 }
 
 # Prometheus: /metrics exposé par django-prometheus (protège au niveau ingress)
+DATABASES["default"].setdefault("OPTIONS", {})
+DATABASES["default"]["OPTIONS"]["sslmode"] = "disable"
